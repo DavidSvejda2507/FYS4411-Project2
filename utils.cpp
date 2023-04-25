@@ -8,6 +8,7 @@
 #include "WaveFunctions/simplegaussian3d.h"
 #include "WaveFunctions/interactinggaussian.h"
 #include "WaveFunctions/interactinggaussian3d.h"
+#include "WaveFunctions/testwavefunction.h"
 #include "Hamiltonians/harmonicoscillator.h"
 #include "Hamiltonians/harmonicoscillator3d.h"
 #include "InitialStates/initialstate.h"
@@ -38,7 +39,8 @@ double wrapSimulation(const std::vector<double> &params, std::vector<double> &gr
     }
     else
         file_initiated = false;
-    int NUM_THREADS = omp_get_max_threads();
+    // int NUM_THREADS = omp_get_max_threads();
+    int NUM_THREADS = 1;
     std::cout << "Using " << NUM_THREADS << " threads." << std::endl;
     std::vector< std::unique_ptr< class Sampler >> samplers(NUM_THREADS);
 
@@ -46,7 +48,7 @@ double wrapSimulation(const std::vector<double> &params, std::vector<double> &gr
     ///// START PARALLEL REGION //////////////////
     ///////////////////////////////////////////////
     
-    #pragma omp parallel
+    #pragma omp parallel num_threads(NUM_THREADS)
     {
         int thread_number = omp_get_thread_num();
         
@@ -143,7 +145,8 @@ std::unique_ptr<class Sampler> runSimulation(
             // std::make_unique<SimpleGaussian>(params[0]),
             // std::make_unique<SimpleGaussian3D>(params[0], params[1]),
             // std::make_unique<InteractingGaussian>(params[0]),
-            std::make_unique<InteractingGaussian3D>(params[0], params[1]),
+            // std::make_unique<InteractingGaussian3D>(params[0], params[1]),
+            std::make_unique<TestWavefunction>(params[0], params[1]),
             // Construct unique_ptr to solver, and move rng
             std::make_unique<MetropolisHastings>(std::move(rng)),
             //std::make_unique<Metropolis>(std::move(rng)),

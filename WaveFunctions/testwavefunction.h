@@ -4,9 +4,9 @@
 
 #include "wavefunction.h"
 
-class SimpleGaussian3D : public WaveFunction {
+class TestWavefunction : public WaveFunction {
 public:
-    SimpleGaussian3D(double alpha, double beta=0, double a=0);
+    TestWavefunction(double alpha=0.5, double beta=1, double a=0.0043);
     
     void InitialisePositions(std::vector<std::unique_ptr<class Particle>>& particles);
     void adjustPosition(std::vector<std::unique_ptr<class Particle>>& particles, int index, std::vector<double> step);
@@ -16,4 +16,7 @@ public:
     std::vector<double> quantumForceMoved(std::vector<std::unique_ptr<class Particle>>& particles, int index, std::vector<double>& step);
     double phiRatio(std::vector<std::unique_ptr<class Particle>>& particles, int index, std::vector<double>& step);
     std::vector<double> getdPhi_dParams(std::vector<std::unique_ptr<class Particle>>& particles);
+
+private:
+    std::unique_ptr<class WaveFunction> m_wavefunc;
 };

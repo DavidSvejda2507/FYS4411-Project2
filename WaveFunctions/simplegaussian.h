@@ -6,7 +6,7 @@
 
 class SimpleGaussian : public WaveFunction {
 public:
-    SimpleGaussian(double alpha);
+    SimpleGaussian(double alpha, double beta=0, double a=0);
     
     void InitialisePositions(std::vector<std::unique_ptr<class Particle>>& particles);
     void adjustPosition(std::vector<std::unique_ptr<class Particle>>& particles, int index, std::vector<double> step);

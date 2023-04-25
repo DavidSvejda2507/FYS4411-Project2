@@ -3,8 +3,8 @@
 #include <cassert>
 // #include <bits/stdc++.h>
 #include "system.h"
-#include "sampler.h"
-#include "samplerFineTune.h"
+#include "Samplers/sampler.h"
+#include "Samplers/samplerFineTune.h"
 #include "particle.h"
 #include "WaveFunctions/wavefunction.h"
 #include "Hamiltonians/hamiltonian.h"

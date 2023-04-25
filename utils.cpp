@@ -1,10 +1,8 @@
-#pragma once
-#include<vector>
+#include <vector>
 #include <memory>
-#include<nlopt.hpp>
+#include <nlopt.hpp>
 #include "utils.h"
 #include "omp.h"
-#include"sampler.h"
 #include "system.h"
 #include "WaveFunctions/simplegaussian.h"
 #include "WaveFunctions/simplegaussian3d.h"
@@ -17,7 +15,7 @@
 #include "Solvers/metropolisHastings.h"
 #include "Math/random.h"
 #include "particle.h"
-#include "sampler.h"
+#include "Samplers/sampler.h"
 
 std::seed_seq seq{std::random_device{}()};
 

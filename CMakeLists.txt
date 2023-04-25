@@ -35,6 +35,7 @@ include_directories(
     InitialStates
     Math
     WaveFunctions
+    Samplers
     Solvers
 )
 
@@ -44,6 +45,7 @@ file(
     GLOB SOURCES "Hamiltonians/*.cpp"
     GLOB SOURCES "InitialStates/*.cpp"
     GLOB SOURCES "Math/*.cpp"
+    GLOB SOURCES "Samplers/*.cpp"
     GLOB SOURCES "Solvers/*.cpp"
     GLOB SOURCES "WaveFunctions/*.cpp"
 )

@@ -1,6 +1,7 @@
+#pragma once
 #include<vector>
 #include <memory>
-#include"sampler.h"
+#include"Samplers/sampler.h"
 //define a struct as a container of simulation params.
 struct simulationParams{
     unsigned int numberOfDimensions;

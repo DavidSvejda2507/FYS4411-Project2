@@ -10,9 +10,13 @@ public:
     int numberOfWFParams
     );
     SamplerFineTune(std::vector<std::unique_ptr< class SamplerFineTune  >  >  & samplers );
+
+    
     void writeHistogram();
-    std::ofstream m_outBinaryFile;
     void sample(bool acceptedStep, System* system) override ;
+
+private:    
+    std::ofstream m_outBinaryFile;
     unsigned int *** m_position_histogram;
     int m_nx=100;
     int m_ny=100;

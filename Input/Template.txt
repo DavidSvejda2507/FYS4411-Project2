@@ -5,6 +5,7 @@ beta=
 gamma=
 nMaxIter=
 energyTol=
+omega=
 calculateGradients=
 numberOfParticles=
 numberOfMetropolisSteps=

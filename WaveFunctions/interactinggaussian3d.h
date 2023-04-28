@@ -24,6 +24,4 @@ private:
     std::vector<std::vector<double>> m_uPrime;
     std::vector<std::vector<double>> m_uDoublePrime;
     std::vector<double> m_interForces;
-    void slowDoubleDerivative(std::vector<std::unique_ptr<class Particle>> &particles, double nabla2_);
-    void slowQuantumForce(std::vector<std::unique_ptr<class Particle>> &particles, int index, std::vector<double> &force);
 };

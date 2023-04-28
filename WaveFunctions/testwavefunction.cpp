@@ -1,15 +1,16 @@
-#include <memory>
-#include <math.h>
 #include <assert.h>
+#include <math.h>
+#include <memory>
 
-#include "testwavefunction.h"
-#include "simplegaussian.h"
-#include "simplegaussian3d.h"
+#include "../particle.h"
+#include "../system.h"
 #include "interactinggaussian.h"
 #include "interactinggaussian3d.h"
+#include "interactinggaussianfermion.h"
+#include "simplegaussian.h"
+#include "simplegaussian3d.h"
+#include "testwavefunction.h"
 #include "wavefunction.h"
-#include "../system.h"
-#include "../particle.h"
 
 #include <iostream>
 
@@ -26,7 +27,7 @@ TestWavefunction::TestWavefunction(double alpha, double beta, double a)
     m_parameters.push_back(alpha);
     m_parameters.push_back(beta);
     m_parameters.push_back(a);
-    m_wavefunc = std::make_unique<InteractingGaussian3D>(InteractingGaussian3D(alpha, beta, a));
+    m_wavefunc = std::make_unique<InteractingGaussianFermion>(InteractingGaussianFermion(alpha, beta, a));
 }
 
 void TestWavefunction::InitialisePositions(std::vector<std::unique_ptr<class Particle>> &particles)

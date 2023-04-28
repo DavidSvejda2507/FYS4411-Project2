@@ -1,10 +1,10 @@
-#include<memory>
 #include <cassert>
 #include <iostream>
+#include <memory>
 
-#include "harmonicoscillator.h"
-#include "../particle.h"
 #include "../WaveFunctions/wavefunction.h"
+#include "../particle.h"
+#include "harmonicoscillator.h"
 
 using std::cout;
 using std::endl;
@@ -15,29 +15,23 @@ using std::endl;
 HarmonicOscillator::HarmonicOscillator(double omega)
 {
     assert(omega > 0);
-    m_omega  = omega;
+    m_omega = omega;
 }
 
 double HarmonicOscillator::computeLocalEnergy(
-            class WaveFunction& waveFunction,
-            std::vector<std::unique_ptr<class Particle>>& particles
-        )
+    class WaveFunction &waveFunction,
+    std::vector<std::unique_ptr<class Particle>> &particles)
 {
-    /* Here, you need to compute the kinetic and potential energies.
-     * Access to the wave function methods can be done using the dot notation
-     * for references, e.g., wavefunction.computeDoubleDerivative(particles),
-     * to get the Laplacian of the wave function.
-     * */
-
     double r2 = 0;
     unsigned int N = particles.size();
-    for (unsigned int i = 0; i < N; i++){
+    for (unsigned int i = 0; i < N; i++)
+    {
         auto position = particles[i]->getPosition();
-        for (unsigned int i = 0; i<particles[0]->getNumberOfDimensions(); i++)
-            r2 += position[i]*position[i];
+        for (unsigned int j = 0; j < particles[0]->getNumberOfDimensions(); j++)
+            r2 += position[j] * position[j];
     }
     // m = omega = 1
     double potentialEnergy = 0.5 * r2;
-    double kineticEnergy   = waveFunction.computeDoubleDerivative(particles)*-0.5;
-    return (kineticEnergy + potentialEnergy)/N;
+    double kineticEnergy = waveFunction.computeDoubleDerivative(particles) * -0.5;
+    return (kineticEnergy + potentialEnergy) / N;
 }

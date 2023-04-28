@@ -1,9 +1,10 @@
 #pragma once
 #include <vector>
 
-class Particle {
+class Particle
+{
 public:
-    Particle(const std::vector<double>& position);
+    Particle(const std::vector<double> &position);
     void adjustPosition(double change, unsigned int dimension);
     void adjustPosition(std::vector<double> step);
     std::vector<double> getPosition() { return m_position; }
@@ -13,4 +14,3 @@ private:
     unsigned int m_numberOfDimensions = 0;
     std::vector<double> m_position = std::vector<double>();
 };
-

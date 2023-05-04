@@ -20,12 +20,12 @@ InteractingGaussian2Fermion::InteractingGaussian2Fermion(double alpha, double be
     m_parameters.push_back(beta);
 }
 
-void InteractingGaussian2Fermion::InitialisePositions(std::vector<std::unique_ptr<class Particle>> &particles)
+void InteractingGaussian2Fermion::InitialisePositions(std::vector<std::unique_ptr<class Particle>> &)
 {
     ;
 }
 
-void InteractingGaussian2Fermion::adjustPosition(std::vector<std::unique_ptr<class Particle>> &particles, int index, std::vector<double> step)
+void InteractingGaussian2Fermion::adjustPosition(std::vector<std::unique_ptr<class Particle>> &, int, std::vector<double>)
 {
     ;
 }

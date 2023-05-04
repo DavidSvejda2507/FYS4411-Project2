@@ -73,12 +73,12 @@ T ***init_3d_array(unsigned int nx, unsigned int ny, unsigned int nz, T zero)
     unsigned int i;
     for (i = 1; i < nx; i++)
     {
-        retPtr[i] = retPtr[i - 1] + ny;
+        retPtr[i] = &retPtr[0][i * ny];
     }
     // then loop through the matrix of pointers and assign the proper address to each of them:
     for (i = 0; i < nx * ny; i++)
     {
-        retPtr[0][i] = retPtr[0][i - 1] + nz;
+        retPtr[0][i] = &retPtr[0][0][i * nz];
     }
     // initialize all elements to zero
     for (i = 0; i < nx * ny * nz; i++)

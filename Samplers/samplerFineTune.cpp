@@ -88,6 +88,12 @@ SamplerFineTune::SamplerFineTune(std::vector<std::unique_ptr<class SamplerFineTu
         }
     }
 }
+
+SamplerFineTune::~SamplerFineTune()
+{
+    delete_3d_array<unsigned int>(m_position_histogram);
+}
+
 void SamplerFineTune::sample(bool acceptedStep, System *system)
 {
     /*sample all the interesting things

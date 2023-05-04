@@ -10,7 +10,7 @@ public:
         unsigned int numberOfDimensions,
         int numberOfWFParams);
     SamplerFineTune(std::vector<std::unique_ptr<class SamplerFineTune>> &samplers);
-    ~SamplerFineTune() { delete_3d_array(m_position_histogram); }
+    ~SamplerFineTune();
 
     void writeHistogram();
     void sample(bool acceptedStep, System *system) override;

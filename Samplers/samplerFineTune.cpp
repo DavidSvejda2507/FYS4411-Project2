@@ -22,7 +22,7 @@ SamplerFineTune::SamplerFineTune(unsigned int numberOfParticles,
     int thread_number = omp_get_thread_num();
     std::string fname_thread = "./Outputs/sampledEnergies_" + std::to_string(numberOfParticles) + "_" + std::to_string(thread_number) + ".bin";
     m_outBinaryFile.open(fname_thread, std::ios::binary);
-    m_position_histogram = init_3d_array(m_nx, m_ny, m_nz);
+    m_position_histogram = init_3d_array<unsigned int>(m_nx, m_ny, m_nz, 0);
     m_xMin = -1.5;
     m_xMax = 1.5;
     m_yMin = -1.5;
@@ -34,7 +34,7 @@ SamplerFineTune::SamplerFineTune(unsigned int numberOfParticles,
 SamplerFineTune::SamplerFineTune(std::vector<std::unique_ptr<class SamplerFineTune>> &samplers) : Sampler()
 {
 
-    m_position_histogram = init_3d_array(m_nx, m_ny, m_nz);
+    m_position_histogram = init_3d_array<unsigned int>(m_nx, m_ny, m_nz, 0);
     int numberOfWFParams = samplers[0]->getGradientTerms().size();
     m_numberOfDimensions = samplers[0]->getNdim();
     m_waveFunctionParameters = samplers[0]->getWFparams();

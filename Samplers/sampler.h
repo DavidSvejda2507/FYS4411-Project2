@@ -13,6 +13,7 @@ public:
         int numberOfWFParams);
     Sampler(std::vector<std::unique_ptr<class Sampler>> &samplers);
     Sampler();
+    virtual ~Sampler() = default;
 
     virtual void sample(bool acceptedStep, class System *system);
     void equilibrationSample(bool acceptedStep);

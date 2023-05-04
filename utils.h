@@ -63,4 +63,36 @@ protected:
     unsigned int m_maxeval = 1000;
     double m_f_abs_tol = 0.01;
 };
-unsigned int ***init_3d_array(unsigned int nx, unsigned int ny, unsigned int nz);
+template <typename T>
+T ***init_3d_array(unsigned int nx, unsigned int ny, unsigned int nz, T zero)
+{
+    // inits a 3d array of zeros
+    T ***retPtr = new T **[nx];
+    retPtr[0] = new T *[nx * ny];
+    retPtr[0][0] = new T[nx * ny * nz];
+    unsigned int i;
+    for (i = 1; i < nx; i++)
+    {
+        retPtr[i] = retPtr[i - 1] + ny;
+    }
+    // then loop through the matrix of pointers and assign the proper address to each of them:
+    for (i = 0; i < nx * ny; i++)
+    {
+        retPtr[0][i] = retPtr[0][i - 1] + nz;
+    }
+    // initialize all elements to zero
+    for (i = 0; i < nx * ny * nz; i++)
+    {
+        retPtr[0][0][i] = zero;
+    }
+
+    return retPtr;
+}
+
+template <typename T>
+void delete_3d_array(T ***array)
+{
+    delete[] array[0][0];
+    delete[] array[0];
+    delete[] array;
+}

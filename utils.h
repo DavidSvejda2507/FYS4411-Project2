@@ -63,6 +63,7 @@ protected:
     unsigned int m_maxeval = 1000;
     double m_f_abs_tol = 0.01;
 };
+
 template <typename T>
 T ***init_3d_array(unsigned int nx, unsigned int ny, unsigned int nz, T zero)
 {
@@ -90,9 +91,36 @@ T ***init_3d_array(unsigned int nx, unsigned int ny, unsigned int nz, T zero)
 }
 
 template <typename T>
+T **init_2d_array(unsigned int nx, unsigned int ny, T zero)
+{
+    // inits a 3d array of zeros
+    T **retPtr = new T *[nx];
+    retPtr[0] = new T[nx * ny];
+    unsigned int i;
+    for (i = 1; i < nx; i++)
+    {
+        retPtr[i] = &retPtr[0][i * ny];
+    }
+    // initialize all elements to zero
+    for (i = 0; i < nx * ny; i++)
+    {
+        retPtr[0][i] = zero;
+    }
+
+    return retPtr;
+}
+
+template <typename T>
 void delete_3d_array(T ***array)
 {
     delete[] array[0][0];
+    delete[] array[0];
+    delete[] array;
+}
+
+template <typename T>
+void delete_2d_array(T **array)
+{
     delete[] array[0];
     delete[] array;
 }

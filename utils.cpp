@@ -45,7 +45,7 @@ double wrapSimulation(const std::vector<double> &params, std::vector<double> &gr
     else
         file_initiated = false;
     int NUM_THREADS = omp_get_max_threads();
-    // int NUM_THREADS = 1;
+    NUM_THREADS = 1;
     std::cout << "Using " << NUM_THREADS << " threads." << std::endl;
     std::vector<std::unique_ptr<class Sampler>> samplers(NUM_THREADS);
 

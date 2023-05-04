@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <iomanip>
 #include <math.h>
 #include <memory>
 #include <stdio.h>
@@ -6,123 +7,190 @@
 
 #include "../particle.h"
 #include "../system.h"
+#include "../utils.h"
 #include "interactinggaussianfermion.h"
 #include "wavefunction.h"
 
 #include <iostream>
 
-InteractingGaussianFermion::InteractingGaussianFermion(double alpha, double beta, double)
+InteractingGaussianFermion::InteractingGaussianFermion(double alpha, double beta, double omega)
 {
     assert(alpha > 0); // If alpha == 0 then the wavefunction doesn't go to zero
-    m_numberOfParameters = 2;
-    m_parameters.reserve(2);
+    m_numberOfParameters = 3;
+    m_parameters.reserve(3);
     m_parameters.push_back(alpha);
     m_parameters.push_back(beta);
+    m_parameters.push_back(omega);
+    m_sqrtOmega = sqrt(omega);
+}
+
+InteractingGaussianFermion::~InteractingGaussianFermion()
+{
+    delete_2d_array<double>(m_invMatrixUp);
+    delete_2d_array<double>(m_invMatrixDown);
+}
+
+void InteractingGaussianFermion::testInverse(std::vector<std::unique_ptr<class Particle>> &particles)
+{
+    std::vector<double> array_vals = std::vector<double>(m_n_2);
+    for (int i = 0; i < m_n_2; i++)
+    {
+        arrayVals(particles[i]->getPosition(), array_vals);
+        for (int j = 0; j < m_n_2; j++)
+        {
+            std::cout << std::setw(10) << std::setprecision(3) << dotProduct(array_vals, j, m_invMatrixUp);
+        }
+        std::cout << "\t\t";
+        std::cout << std::setprecision(3) << m_invMatrixUp[i][0] << '\t';
+        std::cout << std::setprecision(3) << m_invMatrixUp[i][1] << '\t';
+        std::cout << std::setprecision(3) << m_invMatrixUp[i][2] << '\t';
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+    for (int i = m_n_2; i < m_n; i++)
+    {
+        arrayVals(particles[i]->getPosition(), array_vals);
+        for (int j = m_n_2; j < m_n; j++)
+        {
+            std::cout << std::setw(10) << std::setprecision(3) << dotProduct(array_vals, j, m_invMatrixDown);
+        }
+        std::cout << "\t\t";
+        std::cout << std::setprecision(3) << m_invMatrixDown[i - m_n_2][0] << '\t';
+        std::cout << std::setprecision(3) << m_invMatrixDown[i - m_n_2][1] << '\t';
+        std::cout << std::setprecision(3) << m_invMatrixDown[i - m_n_2][2] << '\t';
+        std::cout << std::endl;
+    }
+    std::cout << std::endl
+              << std::endl;
 }
 
 void InteractingGaussianFermion::InitialisePositions(std::vector<std::unique_ptr<class Particle>> &particles)
 {
-    // double r2, dist, u_p;
-    // assert(particles[0]->getNumberOfDimensions() <= 3);
-    // m_distances = std::vector<std::vector<double>>();
-    // for (unsigned int i = 0; i < particles.size(); i++)
-    // {
-    //     auto pos = particles[i]->getPosition();
-    //     auto temp = std::vector<double>();
-    //     for (unsigned int j = 0; j < i; j++)
-    //     {
-    //         auto pos2 = particles[j]->getPosition();
-    //         r2 = 0;
-    //         for (unsigned int k = 0; k < pos.size(); k++)
-    //         {
-    //             r2 += (pos2[k] - pos[k]) * (pos2[k] - pos[k]);
-    //         }
-    //         temp.push_back(sqrt(r2));
-    //     }
-    //     r2 = 0;
-    //     for (unsigned int k = 0; k < pos.size(); k++)
-    //     {
-    //         r2 += pos[k] * pos[k];
-    //     }
-    //     temp.push_back(r2);
-    //     m_distances.push_back(temp);
-    // }
-    // m_interForces = std::vector<double>(3 * particles.size(), 0);
-    // for (unsigned int k = 0; k < particles.size(); k++)
-    // {
-    //     auto pos = particles[k]->getPosition();
-    //     for (unsigned int i = 0; i < particles.size(); i++)
-    //     {
-    //         if (i == k)
-    //             continue;
-    //         auto pos2 = particles[i]->getPosition();
-    //         auto relPos = std::vector<double>();
-    //         dist = i < k ? m_distances[k][i] : m_distances[i][k];
-    //         u_p = uPrime_r(dist);
-    //         for (unsigned int j = 0; j < pos.size(); j++)
-    //         {
-    //             m_interForces[3 * k + j] += (pos[j] - pos2[j]) * u_p;
-    //         }
-    //     }
-    // }
+    m_n = (int)particles.size();
+    assert(m_n == 2 || m_n == 6 || m_n == 12 || m_n == 20);
+    assert(particles[0]->getNumberOfDimensions() == 2);
+    m_n_2 = m_n / 2;
+    m_nxny = std::vector<std::array<int, 2>>();
+    m_nxny.reserve(m_n_2);
+    int nx = 0, ny = 0, nxy = 0, i = 0;
+    while (i < m_n_2)
+    {
+        m_nxny[i] = std::array<int, 2>();
+        m_nxny[i][0] = nx;
+        m_nxny[i][1] = ny;
+        if (nx > 0)
+        {
+            nx--;
+            ny++;
+        }
+        else
+        {
+            nxy++;
+            nx = nxy;
+            ny = 0;
+        }
+        i++;
+    }
+
+    m_invMatrixUp = init_2d_array<double>(m_n_2, m_n_2, 0);
+    m_invMatrixDown = init_2d_array<double>(m_n_2, m_n_2, 0);
+    for (int i = 0; i < m_n_2; i++)
+    {
+        m_invMatrixUp[i][i] = 1;
+        m_invMatrixDown[i][i] = 1;
+    }
+    std::vector<double> array_vals = std::vector<double>(m_n_2);
+    for (int i = 0; i < m_n; i++)
+    {
+        arrayVals(particles[i]->getPosition(), array_vals);
+        updateInverseMatrix(i, array_vals);
+        testInverse(particles);
+    }
+
+    // testInverse(particles);
 }
 
 void InteractingGaussianFermion::adjustPosition(std::vector<std::unique_ptr<class Particle>> &particles, int index, std::vector<double> step)
 {
 
-    // double r2, u_p;
-    // auto pos_old = particles[index]->getPosition();
-    // auto pos = particles[index]->getPosition();
-    // for (unsigned int j = 0; j < pos.size(); j++)
-    // {
-    //     m_interForces[3 * index + j] = 0;
-    //     pos[j] += step[j];
-    // }
+    std::vector<double> array_vals = std::vector<double>(m_n);
+    std::vector<double> pos = std::vector<double>(particles[index]->getPosition());
+    for (unsigned int i = 0; i < pos.size(); i++)
+    {
+        pos[i] += step[i];
+    }
+    arrayVals(pos, array_vals);
+    updateInverseMatrix(index, array_vals);
+}
 
-    // for (int j = 0; j < index; j++)
-    // { // Row
-    //     auto pos2 = particles[j]->getPosition();
-    //     u_p = uPrime_r(m_distances[index][j]);
-    //     for (unsigned int k = 0; k < pos.size(); k++)
-    //         m_interForces[3 * j + k] -= (pos2[k] - pos_old[k]) * u_p;
-    //     r2 = 0;
-    //     for (unsigned int k = 0; k < pos.size(); k++)
-    //     {
-    //         r2 += (pos2[k] - pos[k]) * (pos2[k] - pos[k]);
-    //     }
-    //     m_distances[index][j] = sqrt(r2);
-    //     u_p = uPrime_r(m_distances[index][j]);
-    //     for (unsigned int k = 0; k < pos.size(); k++)
-    //     {
-    //         m_interForces[3 * j + k] += (pos2[k] - pos[k]) * u_p;
-    //         m_interForces[3 * index + k] += (pos[k] - pos2[k]) * u_p;
-    //     }
-    // }
-    // r2 = 0;
-    // for (unsigned int k = 0; k < pos.size(); k++)
-    // {
-    //     r2 += pos[k] * pos[k];
-    // }
-    // m_distances[index][index] = r2;
-    // for (unsigned int j = index + 1; j < particles.size(); j++)
-    // { // Column
-    //     auto pos2 = particles[j]->getPosition();
-    //     u_p = uPrime_r(m_distances[j][index]);
-    //     for (unsigned int k = 0; k < pos.size(); k++)
-    //         m_interForces[3 * j + k] -= (pos2[k] - pos_old[k]) * u_p;
-    //     r2 = 0;
-    //     for (unsigned int k = 0; k < pos.size(); k++)
-    //     {
-    //         r2 += (pos2[k] - pos[k]) * (pos2[k] - pos[k]);
-    //     }
-    //     m_distances[j][index] = sqrt(r2);
-    //     u_p = uPrime_r(m_distances[j][index]);
-    //     for (unsigned int k = 0; k < pos.size(); k++)
-    //     {
-    //         m_interForces[3 * j + k] += (pos2[k] - pos[k]) * u_p;
-    //         m_interForces[3 * index + k] += (pos[k] - pos2[k]) * u_p;
-    //     }
-    // }
+double InteractingGaussianFermion::evalPhi(int i, std::vector<double> const &pos, double phi0)
+{ // Calculates phi_i given i, r and exp(-alpha*omega*r2)
+    int nx = m_nxny[i][0], ny = m_nxny[i][1];
+    return hermite(nx, pos[0]) * hermite(ny, pos[1]) * phi0;
+}
+
+double InteractingGaussianFermion::hermite(int i, double pos)
+{ // Calculates the value of the i-th hermite polynomial for a given position
+    pos *= m_sqrtOmega;
+    switch (i)
+    {
+    case 0:
+        return 1;
+    case 1:
+        return 2 * pos;
+    case 2:
+        return 4 * pos * pos - 2;
+    case 3:
+        return pos * (8 * pos * pos - 12);
+    default:
+        assert(false);
+    }
+}
+
+void InteractingGaussianFermion::arrayVals(std::vector<double> const &pos, std::vector<double> &output)
+{ // Evaluates the values is a column of the Slater matrix, given particles position pos and stores the output in output
+    // Pos has to be updated before giving it to this function, output has to already be initialised
+    double r2 = 0, phi0, alpha = m_parameters[0], omega = m_parameters[2];
+    for (unsigned int i = 0; i < pos.size(); i++)
+    {
+        r2 += pos[i] * pos[i];
+    }
+    phi0 = exp(-alpha * omega * r2);
+    for (int i = 0; i < m_n_2; i++)
+    {
+        output[i] = evalPhi(i, pos, phi0);
+    }
+}
+
+double InteractingGaussianFermion::dotProduct(std::vector<double> &newVals, int invMatIndex, double **invMat)
+{ // Calculates the dot product of a column of the slater matrix with a column of the inverse matrix
+    double sum = 0;
+    for (int i = 0; i < m_n_2; i++)
+    {
+        sum += newVals[i] * invMat[i][invMatIndex];
+    }
+    return sum;
+}
+
+void InteractingGaussianFermion::updateInverseMatrix(int index, std::vector<double> arrayVals)
+{
+    double **invMat = index < m_n_2 ? m_invMatrixUp : m_invMatrixDown;
+    int indexReduced = index % m_n_2;
+    double R_, S_R;
+    R_ = 1 / dotProduct(arrayVals, indexReduced, invMat);
+    for (int i = 0; i < m_n_2; i++)
+    {
+        if (i == indexReduced) continue;
+        S_R = dotProduct(arrayVals, i, invMat) * R_;
+        for (int j = 0; j < m_n_2; j++)
+        {
+            invMat[j][i] -= S_R * invMat[j][indexReduced];
+        }
+    }
+    for (int j = 0; j < m_n_2; j++)
+    {
+        invMat[j][indexReduced] *= R_;
+    }
 }
 
 double InteractingGaussianFermion::jPrime(double r)

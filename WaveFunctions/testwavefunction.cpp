@@ -19,15 +19,9 @@
 #define ForceMoved
 #define PhiRatio
 
-TestWavefunction::TestWavefunction(double alpha, double beta, double a)
+TestWavefunction::TestWavefunction(std::unique_ptr<WaveFunction> wavefunc)
 {
-    assert(alpha > 0); // If alpha == 0 then the wavefunction doesn't go to zero
-    m_numberOfParameters = 3;
-    m_parameters.reserve(3);
-    m_parameters.push_back(alpha);
-    m_parameters.push_back(beta);
-    m_parameters.push_back(a);
-    m_wavefunc = std::make_unique<InteractingGaussianFermion>(InteractingGaussianFermion(alpha, beta, a));
+    m_wavefunc = std::move(wavefunc);
 }
 
 void TestWavefunction::InitialisePositions(std::vector<std::unique_ptr<class Particle>> &particles)

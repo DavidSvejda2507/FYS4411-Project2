@@ -39,7 +39,7 @@ double HormonicOscillatorCoulomb::computeLocalEnergy(
     for (unsigned int i = 0; i < N; i++)
     {
         position = particles[i]->getPosition();
-        for (unsigned int j = 0; j < i; i++)
+        for (unsigned int j = 0; j < i; j++)
         {
             position2 = particles[j]->getPosition();
             r2 = 0;
@@ -48,5 +48,6 @@ double HormonicOscillatorCoulomb::computeLocalEnergy(
             interactionEnergy += 1 / std::sqrt(r2);
         }
     }
+
     return (kineticEnergy + potentialEnergy + interactionEnergy) / N;
 }

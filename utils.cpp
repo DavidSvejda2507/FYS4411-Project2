@@ -1,6 +1,7 @@
 #include "utils.h"
 #include "Hamiltonians/harmonicoscillator.h"
 #include "Hamiltonians/harmonicoscillator3d.h"
+#include "Hamiltonians/harmonicoscillatorcoulomb.h"
 #include "InitialStates/initialstate.h"
 #include "Math/random.h"
 #include "Samplers/sampler.h"
@@ -8,6 +9,7 @@
 #include "Solvers/metropolisHastings.h"
 #include "WaveFunctions/interactinggaussian.h"
 #include "WaveFunctions/interactinggaussian3d.h"
+#include "WaveFunctions/interactinggaussianfermion.h"
 #include "WaveFunctions/simplegaussian.h"
 #include "WaveFunctions/simplegaussian3d.h"
 #include "WaveFunctions/testwavefunction.h"
@@ -41,8 +43,8 @@ double wrapSimulation(const std::vector<double> &params, std::vector<double> &gr
     }
     else
         file_initiated = false;
-    // int NUM_THREADS = omp_get_max_threads();
-    int NUM_THREADS = 1;
+    int NUM_THREADS = omp_get_max_threads();
+    // int NUM_THREADS = 1;
     std::cout << "Using " << NUM_THREADS << " threads." << std::endl;
     std::vector<std::unique_ptr<class Sampler>> samplers(NUM_THREADS);
 
@@ -63,7 +65,6 @@ double wrapSimulation(const std::vector<double> &params, std::vector<double> &gr
     ///////////////////////////////////////////////
     ///// END PARALLEL REGION //////////////////
     ///////////////////////////////////////////////
-
     // gather all simulation results in one sampler
     std::unique_ptr<class Sampler> collective_sampler = std::make_unique<class Sampler>(samplers);
     // write to file
@@ -140,20 +141,26 @@ std::unique_ptr<class Sampler> runSimulation(
     auto system = std::make_unique<System>(
         // Construct unique_ptr to Hamiltonian
         // std::make_unique<HarmonicOscillator>(omega),
-        std::make_unique<HarmonicOscillator3D>(P->omega, P->gamma),
+        std::make_unique<HormonicOscillatorCoulomb>(P->omega),
         // Construct unique_ptr to wave function
+        // std::make_unique<TestWavefunction>(
+        // std::make_unique<SimpleGaussian>(params[0])),
+        // std::make_unique<SimpleGaussian3D>(params[0], params[1])),
+        // std::make_unique<InteractingGaussian>(params[0])),
+        // std::make_unique<InteractingGaussian3D>(params[0], params[1])),
+        // std::make_unique<InteractingGaussianFermion>(params[0], params[1])),
+
         // std::make_unique<SimpleGaussian>(params[0]),
         // std::make_unique<SimpleGaussian3D>(params[0], params[1]),
         // std::make_unique<InteractingGaussian>(params[0]),
         // std::make_unique<InteractingGaussian3D>(params[0], params[1]),
-        std::make_unique<TestWavefunction>(params[0], params[1]),
+        std::make_unique<InteractingGaussianFermion>(params[0], params[1]),
         // Construct unique_ptr to solver, and move rng
         std::make_unique<MetropolisHastings>(std::move(rng)),
         // std::make_unique<Metropolis>(std::move(rng)),
         //  Move the vector of particles to system
         std::move(particles),
         P->calculateGradients);
-
     // Run steps to equilibrate particles
     std::unique_ptr<class Sampler> sampler = system->runEquilibrationSteps(
         P->stepLength,

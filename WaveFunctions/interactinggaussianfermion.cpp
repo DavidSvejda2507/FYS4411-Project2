@@ -210,7 +210,6 @@ double InteractingGaussianFermion::computeDoubleDerivative(std::vector<std::uniq
             dist = sqrt(r2);
             j_p = jPrime(dist);
             nabla2 += 2 * jDoublePrime(1, dist);
-            std::cout << "Dist between particle " << k << " and " << i << " is " << dist << std::endl;
 
             for (unsigned int j = 0; j < pos.size(); j++)
             {
@@ -318,5 +317,12 @@ std::vector<double> InteractingGaussianFermion::getdPhi_dParams(std::vector<std:
         for (unsigned int j = 0; j < position.size(); j++)
             r2 += position[j] * position[j];
     }
-    return std::vector<double>{-r2, 0};
+    double r2_ = 0, r, beta = m_parameters[1];
+    std::vector<double> pos1, pos2;
+    pos1 = particles[0]->getPosition();
+    pos2 = particles[1]->getPosition();
+    r2_ = (pos1[0] - pos2[0]) * (pos1[0] - pos2[0]) + (pos1[1] - pos2[1]) * (pos1[1] - pos2[1]);
+    r = sqrt(r2_);
+
+    return std::vector<double>{-r2, -r2_ / ((1 + beta * r) * (1 + beta * r))};
 }

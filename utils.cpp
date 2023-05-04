@@ -8,6 +8,7 @@
 #include "Solvers/metropolis.h"
 #include "Solvers/metropolisHastings.h"
 #include "WaveFunctions/interactinggaussian.h"
+#include "WaveFunctions/interactinggaussian2fermion.h"
 #include "WaveFunctions/interactinggaussian3d.h"
 #include "WaveFunctions/interactinggaussianfermion.h"
 #include "WaveFunctions/simplegaussian.h"
@@ -148,12 +149,14 @@ std::unique_ptr<class Sampler> runSimulation(
         // std::make_unique<SimpleGaussian3D>(params[0], params[1])),
         // std::make_unique<InteractingGaussian>(params[0])),
         // std::make_unique<InteractingGaussian3D>(params[0], params[1])),
+        // std::make_unique<InteractingGaussian2Fermion>(params[0], params[1])),
         // std::make_unique<InteractingGaussianFermion>(params[0], params[1])),
 
         // std::make_unique<SimpleGaussian>(params[0]),
         // std::make_unique<SimpleGaussian3D>(params[0], params[1]),
         // std::make_unique<InteractingGaussian>(params[0]),
         // std::make_unique<InteractingGaussian3D>(params[0], params[1]),
+        // std::make_unique<InteractingGaussian2Fermion>(params[0], params[1]),
         std::make_unique<InteractingGaussianFermion>(params[0], params[1]),
         // Construct unique_ptr to solver, and move rng
         std::make_unique<MetropolisHastings>(std::move(rng)),

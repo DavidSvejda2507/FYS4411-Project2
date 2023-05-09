@@ -50,7 +50,7 @@ void InteractingGaussianFermion::testInverse(std::vector<std::unique_ptr<class P
     for (int i = m_n_2; i < m_n; i++)
     {
         arrayVals(particles[i]->getPosition(), array_vals);
-        for (int j = m_n_2; j < m_n; j++)
+        for (int j = 0; j < m_n_2; j++)
         {
             std::cout << std::setw(10) << std::setprecision(3) << dotProduct(array_vals, j, m_invMatrixDown);
         }
@@ -104,10 +104,9 @@ void InteractingGaussianFermion::InitialisePositions(std::vector<std::unique_ptr
     {
         arrayVals(particles[i]->getPosition(), array_vals);
         updateInverseMatrix(i, array_vals);
-        testInverse(particles);
     }
 
-    // testInverse(particles);
+    testInverse(particles);
 }
 
 void InteractingGaussianFermion::adjustPosition(std::vector<std::unique_ptr<class Particle>> &particles, int index, std::vector<double> step)

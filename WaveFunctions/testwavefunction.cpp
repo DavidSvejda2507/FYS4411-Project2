@@ -15,6 +15,7 @@
 #include <iostream>
 
 #define Nabla2
+#define Nabla2_Ratio
 // #define Force
 // #define ForceMoved
 #define PhiRatio
@@ -73,6 +74,29 @@ double TestWavefunction::computeDoubleDerivative(std::vector<std::unique_ptr<cla
     nabla2 /= phi;
 
     std::cout << "Analytical: " << nablaAnal << "   \t Numerical: " << nabla2 << "   \t Rel Diff: " << abs((nabla2 - nablaAnal) / nabla2) << "   \t Abs Diff: " << abs(nabla2 - nablaAnal) << std::endl;
+#else
+#ifdef Nabla2_Ratio
+    // Numerical calculation
+    double nabla2 = 0, phi_plus, phi_minus;
+    const double dx = 1e-5, dx2_1 = 1 / (dx * dx);
+    int n = particles[0]->getNumberOfDimensions();
+    std::vector<double> step = std::vector<double>(n, 0);
+    for (unsigned int i = 0; i < particles.size(); i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            step[j] = dx;
+            phi_plus = m_wavefunc->phiRatio(particles, i, step);
+            step[j] = -dx;
+            phi_minus = m_wavefunc->phiRatio(particles, i, step);
+            step[j] = 0;
+
+            nabla2 += (phi_plus + phi_minus - 2) * dx2_1;
+        }
+    }
+
+    std::cout << "Analytical: " << nablaAnal << "   \t Numerical: " << nabla2 << "   \t Rel Diff: " << abs((nabla2 - nablaAnal) / nabla2) << "   \t Abs Diff: " << abs(nabla2 - nablaAnal) << std::endl;
+#endif
 #endif
 
     return nablaAnal;

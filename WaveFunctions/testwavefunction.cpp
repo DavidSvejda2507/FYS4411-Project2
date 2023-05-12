@@ -16,8 +16,10 @@
 
 // #define Nabla2
 // #define Nabla2_Ratio
-#define Force
-#define ForceMoved
+// #define Force
+#define Force_Ratio
+// #define ForceMoved
+#define ForceMoved_Ratio
 // #define PhiRatio
 
 TestWavefunction::TestWavefunction(std::unique_ptr<WaveFunction> wavefunc)
@@ -135,6 +137,29 @@ std::vector<double> TestWavefunction::quantumForce(std::vector<std::unique_ptr<c
         diff += (forceAnal[j] - force[j]) * (forceAnal[j] - force[j]);
     }
     std::cout << "Abs Diff: " << diff << std::endl;
+#else
+#ifdef Force_Ratio
+    // Numerical calculation
+    double phi_plus, phi_minus, diff = 0;
+    const double dx = 1e-5, dx2 = 2 * dx;
+    int n = particles[0]->getNumberOfDimensions();
+    std::vector<double> step = std::vector<double>(n, 0);
+    std::vector<double> force = std::vector<double>(n, 0);
+    std::cout << "Force diffs:\t";
+    for (int j = 0; j < n; j++)
+    {
+        step[j] = dx;
+        phi_plus = sqrt(m_wavefunc->phiRatio(particles, index, step));
+        step[j] = -dx;
+        phi_minus = sqrt(m_wavefunc->phiRatio(particles, index, step));
+        step[j] = 0;
+
+        force[j] = (phi_plus - phi_minus) / (dx2);
+        std::cout << forceAnal[j] - force[j] << "\t";
+        diff += (forceAnal[j] - force[j]) * (forceAnal[j] - force[j]);
+    }
+    std::cout << "Abs Diff: " << diff << std::endl;
+#endif
 #endif
 
     return forceAnal;
@@ -179,6 +204,35 @@ std::vector<double> TestWavefunction::quantumForceMoved(std::vector<std::unique_
     m_wavefunc->adjustPosition(particles, index, step);
     particles[index]->adjustPosition(step);
     std::cout << "Abs Diff: " << diff << std::endl;
+#else
+#ifdef ForceMoved_Ratio
+    // Numerical calculation
+    double phi_plus, phi_minus, diff = 0;
+    const double dx = 1e-5, dx2 = 2 * dx;
+    int n = particles[0]->getNumberOfDimensions();
+    std::vector<double> step = std::vector<double>(n, 0);
+    std::vector<double> force = std::vector<double>(n, 0);
+    m_wavefunc->adjustPosition(particles, index, step_);
+    particles[index]->adjustPosition(step_);
+    std::cout << "Force diffs:\t";
+    for (int j = 0; j < n; j++)
+    {
+        step[j] = dx;
+        phi_plus = sqrt(m_wavefunc->phiRatio(particles, index, step));
+        step[j] = -dx;
+        phi_minus = sqrt(m_wavefunc->phiRatio(particles, index, step));
+        step[j] = 0;
+
+        force[j] = (phi_plus - phi_minus) / (dx2);
+        std::cout << forceAnal[j] - force[j] << "\t";
+        diff += (forceAnal[j] - force[j]) * (forceAnal[j] - force[j]);
+    }
+    for (int j = 0; j < n; j++)
+        step[j] = -step_[j];
+    m_wavefunc->adjustPosition(particles, index, step);
+    particles[index]->adjustPosition(step);
+    std::cout << "Abs Diff: " << diff << std::endl;
+#endif
 #endif
 
     return forceAnal;

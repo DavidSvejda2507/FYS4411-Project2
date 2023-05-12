@@ -14,7 +14,7 @@
 #include <iostream>
 
 // Used for the calculation of the determinant
-#define N 6
+#define N 10
 
 InteractingGaussianFermion::InteractingGaussianFermion(double alpha, double beta, double omega)
 {
@@ -177,7 +177,7 @@ double InteractingGaussianFermion::hermitePrime(int i, double pos)
     case 1:
         return (-4 * pos2 + 2) * rho;
     case 2:
-        return (-8 * pos2 + 4) * pos * rho;
+        return (-8 * pos2 + 12) * rho * pos;
     case 3:
         return ((-16 * pos2 + 48) * pos2 - 12) * rho;
     default:

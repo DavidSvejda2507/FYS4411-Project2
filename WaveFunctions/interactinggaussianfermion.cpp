@@ -14,7 +14,7 @@
 #include <iostream>
 
 // Used for the calculation of the determinant
-#define N 6
+#define N 10
 
 InteractingGaussianFermion::InteractingGaussianFermion(double alpha, double beta, double omega)
 {
@@ -331,40 +331,43 @@ double InteractingGaussianFermion::evalPhiPrimePrime(int i, std::vector<double> 
 double InteractingGaussianFermion::hermitePrimePrime(int i, double pos)
 { // Calculates the value of the i-th hermite polynomial for a given position
 
-    double rho = m_sqrtAO, rho2, rho3, rho4;
+    double rho = m_sqrtAO, rho2, rho3, rho4, pos2;
     rho2 = rho * rho;
     rho3 = rho2 * rho;
     rho4 = rho3 * rho;
-    switch (i)
-    {
-    case 0:
-        return (rho4 * pos * pos - rho2) * hermite(i, pos);
-    case 1:
-        return -4 * rho3 * pos * i * hermite(i - 1, pos) + (rho4 * pos * pos - rho2) * hermite(i, pos);
-    default:
-        return 4 * rho2 * i * (i - 1) * hermite(i - 2, pos) - 4 * rho3 * pos * i * hermite(i - 1, pos) + (rho4 * pos * pos - rho2) * hermite(i, pos);
-    }
-
-    // double rho = m_sqrtAO, rho2, pos2;
-    // rho2 = rho * rho;
-    // pos *= rho;
-    // pos2 = pos * pos;
-
-    // // 4*rho2*n*(n - 1)*H(n-2)(pos) - 4*rho3*pos*n*H(n-1)(pos) + (rho4*pos*pos - rho2)H(n)(pos)
-
     // switch (i)
     // {
     // case 0:
-    //     return (rho2 * pos2 - 1) * rho2;
+    //     return (4 * rho4 * pos * pos - 2 * rho2) * hermite(i, pos);
     // case 1:
-    //     return (rho2 * pos2 - rho * 2 - 1) * rho2 * pos * 2;
-    // case 2:
-    //     return (((-4 * pos2 + 2) * rho2 - 16 * rho + 4) * pos2 + 10) * rho2;
-    // case 3:
-    //     return (((2 * pos2 - 3) * rho2 - 12 * rho - 2) * pos2 + 6 * rho + 15) * rho2 * pos * 4;
+    //     return (-8 * rho3 * pos * i * hermite(i - 1, pos)) + ((4 * rho4 * pos * pos - 2 * rho2) * hermite(i, pos));
     // default:
-    //     assert(false);
+    //     return (4 * rho2 * i * (i - 1) * hermite(i - 2, pos)) - (8 * rho3 * pos * i * hermite(i - 1, pos)) + ((4 * rho4 * pos * pos - 2 * rho2) * hermite(i, pos));
     // }
+
+    // double rho = m_sqrtAO, rho2, pos2;
+    // rho2 = rho * rho;
+    pos2 = pos * pos;
+    switch (i)
+    {
+    case 0:
+        return (4 * rho2 * pos2 - 2) * rho2;
+    case 1:
+        return ((-8 * rho3) + (8 * rho4 * pos2 - 4 * rho2)) * pos;
+    case 2:
+        return ((2 * rho2 * pos2 - rho2 - 4 * rho - 1) * 8 * pos2 - 12) * rho2;
+    default:
+        return (4 * rho2 * i * (i - 1) * hermite(i - 2, pos)) - (8 * rho3 * pos * i * hermite(i - 1, pos)) + ((4 * rho4 * pos2 - 2 * rho2) * hermite(i, pos));
+    }
+
+    // case 0:
+    //     return 1;
+    // case 1:
+    //     return 2 * pos;
+    // case 2:
+    //     return 4 * pos * pos - 2;
+    // case 3:
+    //     return pos * (8 * pos * pos - 12);
 }
 
 void InteractingGaussianFermion::arrayValsPrimePrime(std::vector<double> const &pos, std::vector<double> &output)
@@ -484,7 +487,7 @@ double InteractingGaussianFermion::phiRatio(std::vector<std::unique_ptr<class Pa
     // }
     // return phi;
     std::vector<double> array_vals = std::vector<double>(m_n_2, 0);
-    std::vector<double> pos = particles[index]->getPosition();
+    std::vector<double> pos = std::vector<double>(particles[index]->getPosition());
     pos[0] += step[0];
     pos[1] += step[1];
     arrayVals(pos, array_vals);

@@ -14,11 +14,11 @@
 
 #include <iostream>
 
-#define Nabla2
+// #define Nabla2
 #define Nabla2_Ratio
 // #define Force
 // #define ForceMoved
-#define PhiRatio
+// #define PhiRatio
 
 TestWavefunction::TestWavefunction(std::unique_ptr<WaveFunction> wavefunc)
 {
@@ -86,9 +86,9 @@ double TestWavefunction::computeDoubleDerivative(std::vector<std::unique_ptr<cla
         for (int j = 0; j < n; j++)
         {
             step[j] = dx;
-            phi_plus = m_wavefunc->phiRatio(particles, i, step);
+            phi_plus = sqrt(m_wavefunc->phiRatio(particles, i, step));
             step[j] = -dx;
-            phi_minus = m_wavefunc->phiRatio(particles, i, step);
+            phi_minus = sqrt(m_wavefunc->phiRatio(particles, i, step));
             step[j] = 0;
 
             nabla2 += (phi_plus + phi_minus - 2) * dx2_1;

@@ -159,8 +159,8 @@ std::unique_ptr<class Sampler> runSimulation(
         // std::make_unique<InteractingGaussian2Fermion>(params[0], params[1]),
         // std::make_unique<InteractingGaussianFermion>(params[0], params[1], P->omega),
         // Construct unique_ptr to solver, and move rng
-        // std::make_unique<MetropolisHastings>(std::move(rng)),
-        std::make_unique<Metropolis>(std::move(rng)),
+        std::make_unique<MetropolisHastings>(std::move(rng)),
+        // std::make_unique<Metropolis>(std::move(rng)),
         //  Move the vector of particles to system
         std::move(particles),
         P->calculateGradients);

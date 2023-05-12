@@ -14,7 +14,7 @@
 #include <iostream>
 
 // Used for the calculation of the determinant
-#define N 10
+#define N 6
 
 InteractingGaussianFermion::InteractingGaussianFermion(double alpha, double beta, double omega)
 {
@@ -72,6 +72,8 @@ void InteractingGaussianFermion::InitialisePositions(std::vector<std::unique_ptr
     m_n = (int)particles.size();
     assert(m_n == 2 || m_n == 6 || m_n == 12 || m_n == 20);
     assert(particles[0]->getNumberOfDimensions() == 2);
+    if (m_n > 2 * N)
+        std::cout << "Warning: calculating the determinant is not possible" << std::endl;
     m_n_2 = m_n / 2;
     m_nxny = std::vector<std::array<int, 2>>();
     m_nxny.reserve(m_n_2);
@@ -130,6 +132,21 @@ double InteractingGaussianFermion::evalPhi(int i, std::vector<double> const &pos
     return hermite(nx, pos[0]) * hermite(ny, pos[1]) * phi0;
 }
 
+std::array<double, 2> InteractingGaussianFermion::evalPhiPrime(int i, std::vector<double> const &pos, double phi0)
+{ // Calculates nabla phi_i given i, r and exp(-alpha*omega*r2)
+    int nx = m_nxny[i][0], ny = m_nxny[i][1];
+    std::array<double, 2> grad = {
+        hermitePrime(nx, pos[0]) * hermite(ny, pos[1]) * phi0,
+        hermite(nx, pos[0]) * hermitePrime(ny, pos[1]) * phi0};
+    return grad;
+}
+
+double InteractingGaussianFermion::evalPhiPrimePrime(int i, std::vector<double> const &pos, double phi0)
+{ // Calculates nabla^2 phi_i given i, r and exp(-alpha*omega*r2)
+    int nx = m_nxny[i][0], ny = m_nxny[i][1];
+    return ((hermitePrimePrime(nx, pos[0]) * hermite(ny, pos[1])) + (hermite(nx, pos[0]) * hermitePrimePrime(ny, pos[1]))) * phi0;
+}
+
 double InteractingGaussianFermion::hermite(int i, double pos)
 { // Calculates the value of the i-th hermite polynomial for a given position
     pos *= m_sqrtAO;
@@ -148,8 +165,50 @@ double InteractingGaussianFermion::hermite(int i, double pos)
     }
 }
 
+double InteractingGaussianFermion::hermitePrime(int i, double pos)
+{ // Calculates the value of the term in the first derivative of phi_i w.r.t. x
+    double rho = m_sqrtAO, pos2;
+    pos *= rho;
+    pos2 = pos * pos;
+    switch (i)
+    {
+    case 0:
+        return -2 * pos * rho;
+    case 1:
+        return (-4 * pos2 + 2) * rho;
+    case 2:
+        return (-8 * pos2 + 4) * pos * rho;
+    case 3:
+        return ((-16 * pos2 + 48) * pos2 - 12) * rho;
+    default:
+        assert(false);
+        return 2 * rho * i * hermite(i - 1, pos / rho) - 2 * rho * pos * hermite(i, pos / rho);
+    }
+}
+
+double InteractingGaussianFermion::hermitePrimePrime(int i, double pos)
+{ // Calculates the value of the term in the second derivative of phi_i w.r.t. x
+    double rho = m_sqrtAO, rho2, pos2;
+    rho2 = rho * rho;
+    pos2 = pos * pos;
+    switch (i)
+    {
+    case 0:
+        return (4 * rho2 * pos2 - 2) * rho2;
+    case 1:
+        return ((rho2 * pos2 - rho - 0.5) * 8 * rho2) * pos;
+    case 2:
+        return ((2 * rho2 * pos2 - rho2 - 4 * rho - 1) * 8 * pos2 - 12) * rho2;
+    case 3:
+        return ((rho2 * pos2 - 5) * 32 * rho2 * pos2 - 24) * rho2 * rho * pos;
+    default:
+        assert(false);
+        return (4 * rho2 * i * (i - 1) * hermite(i - 2, pos)) - (8 * rho2 * rho * pos * i * hermite(i - 1, pos)) + ((4 * rho2 * rho2 * pos2 - 2 * rho2) * hermite(i, pos));
+    }
+}
+
 void InteractingGaussianFermion::arrayVals(std::vector<double> const &pos, std::vector<double> &output)
-{ // Evaluates the values is a column of the Slater matrix, given particles position pos and stores the output in output
+{ // Evaluates the values in a column of the Slater matrix, given particles position pos and stores the output in output
     // Pos has to be updated before giving it to this function, output has to already be initialised
     double r2 = 0, phi0, alpha = m_parameters[0], omega = m_parameters[2];
     for (unsigned int i = 0; i < pos.size(); i++)
@@ -163,6 +222,36 @@ void InteractingGaussianFermion::arrayVals(std::vector<double> const &pos, std::
     }
 }
 
+void InteractingGaussianFermion::arrayValsPrime(std::vector<double> const &pos, std::vector<std::array<double, 2>> &output)
+{ // Evaluates the values in a column of the Slater matrix, given particles position pos and stores the output in output
+    // Pos has to be updated before giving it to this function, output has to already be initialised
+    double r2 = 0, phi0, alpha = m_parameters[0], omega = m_parameters[2];
+    for (unsigned int i = 0; i < pos.size(); i++)
+    {
+        r2 += pos[i] * pos[i];
+    }
+    phi0 = exp(-alpha * omega * r2);
+    for (int i = 0; i < m_n_2; i++)
+    {
+        output[i] = evalPhiPrime(i, pos, phi0);
+    }
+}
+
+void InteractingGaussianFermion::arrayValsPrimePrime(std::vector<double> const &pos, std::vector<double> &output)
+{ // Evaluates the values in a column of the Slater matrix, given particles position pos and stores the output in output
+    // Pos has to be updated before giving it to this function, output has to already be initialised
+    double r2 = 0, phi0, AO = m_sqrtAO * m_sqrtAO;
+    for (unsigned int i = 0; i < pos.size(); i++)
+    {
+        r2 += pos[i] * pos[i];
+    }
+    phi0 = exp(-1 * AO * r2);
+    for (int i = 0; i < m_n_2; i++)
+    {
+        output[i] = evalPhiPrimePrime(i, pos, phi0);
+    }
+}
+
 double InteractingGaussianFermion::dotProduct(std::vector<double> &newVals, int index)
 { // Calculates the dot product of a column of the slater matrix with a column of the inverse matrix
     double **invMat = index < m_n_2 ? m_invMatrixUp : m_invMatrixDown;
@@ -171,6 +260,19 @@ double InteractingGaussianFermion::dotProduct(std::vector<double> &newVals, int 
     for (int i = 0; i < m_n_2; i++)
     {
         sum += newVals[i] * invMat[i][indexReduced];
+    }
+    return sum;
+}
+
+std::vector<double> InteractingGaussianFermion::vectorDotProduct(std::vector<std::array<double, 2>> &newVals, int index)
+{ // Calculates the dot product of a column of the slater matrix with a column of the inverse matrix
+    double **invMat = index < m_n_2 ? m_invMatrixUp : m_invMatrixDown;
+    int indexReduced = index % m_n_2;
+    std::vector<double> sum = std::vector<double>(m_n_2, 0);
+    for (int i = 0; i < m_n_2; i++)
+    {
+        sum[0] += newVals[i][0] * invMat[i][indexReduced];
+        sum[1] += newVals[i][1] * invMat[i][indexReduced];
     }
     return sum;
 }
@@ -283,7 +385,7 @@ double determinantOfMatrix(double mat[N][N], int n)
 
 double InteractingGaussianFermion::evaluate(std::vector<std::unique_ptr<class Particle>> &particles)
 {
-    // assert(particles.size() <= 2 * N);
+    assert(particles.size() <= 2 * N);
     assert(particles[0]->getNumberOfDimensions() == 2);
 
     double phi = 1;
@@ -322,69 +424,6 @@ double InteractingGaussianFermion::evaluate(std::vector<std::unique_ptr<class Pa
     return phi;
 }
 
-double InteractingGaussianFermion::evalPhiPrimePrime(int i, std::vector<double> const &pos, double phi0)
-{ // Calculates phi_i given i, r and exp(-alpha*omega*r2)
-    int nx = m_nxny[i][0], ny = m_nxny[i][1];
-    return ((hermitePrimePrime(nx, pos[0]) * hermite(ny, pos[1])) + (hermite(nx, pos[0]) * hermitePrimePrime(ny, pos[1]))) * phi0;
-}
-
-double InteractingGaussianFermion::hermitePrimePrime(int i, double pos)
-{ // Calculates the value of the i-th hermite polynomial for a given position
-
-    double rho = m_sqrtAO, rho2, rho3, rho4, pos2;
-    rho2 = rho * rho;
-    rho3 = rho2 * rho;
-    rho4 = rho3 * rho;
-    // switch (i)
-    // {
-    // case 0:
-    //     return (4 * rho4 * pos * pos - 2 * rho2) * hermite(i, pos);
-    // case 1:
-    //     return (-8 * rho3 * pos * i * hermite(i - 1, pos)) + ((4 * rho4 * pos * pos - 2 * rho2) * hermite(i, pos));
-    // default:
-    //     return (4 * rho2 * i * (i - 1) * hermite(i - 2, pos)) - (8 * rho3 * pos * i * hermite(i - 1, pos)) + ((4 * rho4 * pos * pos - 2 * rho2) * hermite(i, pos));
-    // }
-
-    // double rho = m_sqrtAO, rho2, pos2;
-    // rho2 = rho * rho;
-    pos2 = pos * pos;
-    switch (i)
-    {
-    case 0:
-        return (4 * rho2 * pos2 - 2) * rho2;
-    case 1:
-        return ((-8 * rho3) + (8 * rho4 * pos2 - 4 * rho2)) * pos;
-    case 2:
-        return ((2 * rho2 * pos2 - rho2 - 4 * rho - 1) * 8 * pos2 - 12) * rho2;
-    default:
-        return (4 * rho2 * i * (i - 1) * hermite(i - 2, pos)) - (8 * rho3 * pos * i * hermite(i - 1, pos)) + ((4 * rho4 * pos2 - 2 * rho2) * hermite(i, pos));
-    }
-
-    // case 0:
-    //     return 1;
-    // case 1:
-    //     return 2 * pos;
-    // case 2:
-    //     return 4 * pos * pos - 2;
-    // case 3:
-    //     return pos * (8 * pos * pos - 12);
-}
-
-void InteractingGaussianFermion::arrayValsPrimePrime(std::vector<double> const &pos, std::vector<double> &output)
-{ // Evaluates the values is a column of the Slater matrix, given particles position pos and stores the output in output
-    // Pos has to be updated before giving it to this function, output has to already be initialised
-    double r2 = 0, phi0, AO = m_sqrtAO * m_sqrtAO;
-    for (unsigned int i = 0; i < pos.size(); i++)
-    {
-        r2 += pos[i] * pos[i];
-    }
-    phi0 = exp(-1 * AO * r2);
-    for (int i = 0; i < m_n_2; i++)
-    {
-        output[i] = evalPhiPrimePrime(i, pos, phi0);
-    }
-}
-
 double InteractingGaussianFermion::computeDoubleDerivative(std::vector<std::unique_ptr<class Particle>> &particles)
 {
     //***************WE RETURN d2/dx2(phi)/phi NOT d2/dx2(phi)*********************
@@ -404,58 +443,30 @@ double InteractingGaussianFermion::computeDoubleDerivative(std::vector<std::uniq
 std::vector<double> InteractingGaussianFermion::quantumForce(std::vector<std::unique_ptr<class Particle>> &particles, int index)
 {
     //***************WE RETURN d/dx(phi)/phi NOT d/dx(phi)*********************
-    auto pos = particles[index]->getPosition();
-    auto force = std::vector<double>(pos);
-    double alpha = m_parameters[0], r2, j_p;
-    for (unsigned int i = 0; i < force.size(); i++)
-    {
-        force[i] *= -2 * alpha;
-    }
-    for (unsigned int i = 0; i < particles.size(); i++)
-    {
-        if ((int)i == index) continue;
-        auto pos2 = particles[i]->getPosition();
-        r2 = 0;
-        for (unsigned int j = 0; j < force.size(); j++)
-        {
-            r2 += (pos[j] - pos2[j]) * (pos[j] - pos2[j]);
-        }
-        j_p = jPrime(sqrt(r2));
-        for (unsigned int j = 0; j < force.size(); j++)
-        {
-            force[j] += (pos[j] - pos2[j]) * j_p;
-        }
-    }
-    return force;
+    std::vector<double> pos = particles[index]->getPosition();
+    std::vector<std::array<double, 2>> array_vals = std::vector<std::array<double, 2>>(m_n_2);
+    arrayValsPrime(pos, array_vals);
+    return vectorDotProduct(array_vals, index);
 }
 
 std::vector<double> InteractingGaussianFermion::quantumForceMoved(std::vector<std::unique_ptr<class Particle>> &particles, int index, std::vector<double> &step)
 {
     //***************WE RETURN d/dx(phi)/phi NOT d/dx(phi)*********************
-
-    auto pos = particles[index]->getPosition();
-    auto force = std::vector<double>(pos);
-    double alpha = m_parameters[0], r2 = 0, j_p;
-    for (unsigned int i = 0; i < force.size(); i++)
-    {
-        force[i] += step[i];
-        force[i] *= -2 * alpha;
-    }
-    for (unsigned int i = 0; i < particles.size(); i++)
-    {
-        if ((int)i == index) continue;
-        auto pos2 = particles[i]->getPosition();
-        r2 = 0;
-        for (unsigned int j = 0; j < force.size(); j++)
-        {
-            r2 += (pos[j] + step[j] - pos2[j]) * (pos[j] + step[j] - pos2[j]);
-        }
-        j_p = jPrime(sqrt(r2));
-        for (unsigned int j = 0; j < force.size(); j++)
-        {
-            force[j] += (pos[j] + step[j] - pos2[j]) * j_p;
-        }
-    }
+    // The inverse matrix should be updated before calculating the gradient like in the quantumForce
+    // However, only one row of the updated matix will be used
+    // Updating the matrix results in dividing the row by the determinent ratio
+    // Instead we divide by the determinant ratio here
+    std::vector<double> pos = std::vector<double>(particles[index]->getPosition());
+    pos[0] += step[0];
+    pos[1] += step[1];
+    std::vector<std::array<double, 2>> array_vecs = std::vector<std::array<double, 2>>(m_n_2);
+    arrayValsPrime(pos, array_vecs);
+    std::vector<double> force = vectorDotProduct(array_vecs, index);
+    std::vector<double> array_vals = std::vector<double>(m_n_2);
+    arrayVals(pos, array_vals);
+    double det_ratio = dotProduct(array_vals, index);
+    force[0] /= det_ratio;
+    force[1] /= det_ratio;
     return force;
 }
 
@@ -495,21 +506,9 @@ double InteractingGaussianFermion::phiRatio(std::vector<std::unique_ptr<class Pa
     return ratio * ratio;
 }
 
-std::vector<double> InteractingGaussianFermion::getdPhi_dParams(std::vector<std::unique_ptr<class Particle>> &particles)
+// std::vector<double> InteractingGaussianFermion::getdPhi_dParams(std::vector<std::unique_ptr<class Particle>> &particles)
+std::vector<double> InteractingGaussianFermion::getdPhi_dParams(std::vector<std::unique_ptr<class Particle>> &)
 {
-    double r2 = 0;
-    for (unsigned int i = 0; i < particles.size(); i++)
-    {
-        std::vector<double> position = particles[i]->getPosition();
-        for (unsigned int j = 0; j < position.size(); j++)
-            r2 += position[j] * position[j];
-    }
-    double r2_ = 0, r, beta = m_parameters[1];
-    std::vector<double> pos1, pos2;
-    pos1 = particles[0]->getPosition();
-    pos2 = particles[1]->getPosition();
-    r2_ = (pos1[0] - pos2[0]) * (pos1[0] - pos2[0]) + (pos1[1] - pos2[1]) * (pos1[1] - pos2[1]);
-    r = sqrt(r2_);
 
-    return std::vector<double>{-r2, -r2_ / ((1 + beta * r) * (1 + beta * r))};
+    return std::vector<double>{0, 0};
 }

@@ -27,12 +27,15 @@ private:
     // std::vector<double> m_interForces;
     double evalPhi(int i, std::vector<double> const &pos, double phi0);
     double hermite(int n, double pos);
-    // double evalPhiPrime(int i, std::vector<double> const &pos, double phi0);
+    void arrayVals(std::vector<double> const &pos, std::vector<double> &output);
+    std::array<double, 2> evalPhiPrime(int i, std::vector<double> const &pos, double phi0);
+    double hermitePrime(int n, double pos);
+    void arrayValsPrime(std::vector<double> const &pos, std::vector<std::array<double, 2>> &output);
     double evalPhiPrimePrime(int i, std::vector<double> const &pos, double phi0);
     double hermitePrimePrime(int n, double pos);
-    void arrayVals(std::vector<double> const &pos, std::vector<double> &output);
     void arrayValsPrimePrime(std::vector<double> const &pos, std::vector<double> &output);
     double dotProduct(std::vector<double> &newVals, int index);
+    std::vector<double> vectorDotProduct(std::vector<std::array<double, 2>> &newVals, int index);
     void updateInverseMatrix(int index, std::vector<double> arrayVals);
     void testInverse(std::vector<std::unique_ptr<class Particle>> &particles);
     double jPrime(double r);

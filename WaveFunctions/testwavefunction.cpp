@@ -15,9 +15,9 @@
 #include <iostream>
 
 // #define Nabla2
-#define Nabla2_Ratio
-// #define Force
-// #define ForceMoved
+// #define Nabla2_Ratio
+#define Force
+#define ForceMoved
 // #define PhiRatio
 
 TestWavefunction::TestWavefunction(std::unique_ptr<WaveFunction> wavefunc)

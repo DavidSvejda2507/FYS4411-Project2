@@ -34,6 +34,9 @@ private:
     double evalPhiPrimePrime(int i, std::vector<double> const &pos, double phi0);
     double hermitePrimePrime(int n, double pos);
     void arrayValsPrimePrime(std::vector<double> const &pos, std::vector<double> &output);
+    double evalPhiAlpha(int i, std::vector<double> const &pos, double phi0, double r2);
+    double hermiteAlpha(int n, double pos);
+    void arrayValsAlpha(std::vector<double> const &pos, std::vector<double> &output);
     double dotProduct(std::vector<double> &newVals, int index);
     std::vector<double> vectorDotProduct(std::vector<std::array<double, 2>> &newVals, int index);
     void updateInverseMatrix(int index, std::vector<double> arrayVals);

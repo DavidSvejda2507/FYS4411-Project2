@@ -31,7 +31,8 @@ double HarmonicOscillator::computeLocalEnergy(
             r2 += position[j] * position[j];
     }
     // m = omega = 1
-    double potentialEnergy = 0.5 * r2;
+    double potentialEnergy = 0.5 * r2 * m_omega;
     double kineticEnergy = waveFunction.computeDoubleDerivative(particles) * -0.5;
+    // std::cout << "Potential: " << potentialEnergy << "\tKinetic: " << kineticEnergy << "\tTotal: " << (kineticEnergy + potentialEnergy) << std::endl;
     return (kineticEnergy + potentialEnergy) / N;
 }

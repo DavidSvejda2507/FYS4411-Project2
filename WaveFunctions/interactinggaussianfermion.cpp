@@ -16,7 +16,8 @@
 
 InteractingGaussianFermion::InteractingGaussianFermion(double alpha, double beta, double omega)
 {
-    assert(alpha > 0); // If alpha == 0 then the wavefunction doesn't go to zero
+    // assert(alpha > 0); // If alpha == 0 then the wavefunction doesn't go to zero
+    if (alpha <= 0) alpha = 0.1;
     m_numberOfParameters = 3;
     m_parameters.reserve(3);
     m_parameters.push_back(alpha);
@@ -108,7 +109,7 @@ void InteractingGaussianFermion::InitialisePositions(std::vector<std::unique_ptr
         arrayVals(particles[i]->getPosition(), array_vals);
         updateInverseMatrix(i, array_vals);
     }
-    testInverse(particles);
+    // testInverse(particles);
 }
 
 void InteractingGaussianFermion::adjustPosition(std::vector<std::unique_ptr<class Particle>> &particles, int index, std::vector<double> step)
@@ -143,6 +144,17 @@ double InteractingGaussianFermion::evalPhiPrimePrime(int i, std::vector<double> 
 { // Calculates nabla^2 phi_i given i, r and exp(-alpha*omega*r2)
     int nx = m_nxny[i][0], ny = m_nxny[i][1];
     return ((hermitePrimePrime(nx, pos[0]) * hermite(ny, pos[1])) + (hermite(nx, pos[0]) * hermitePrimePrime(ny, pos[1]))) * phi0;
+}
+
+double InteractingGaussianFermion::evalPhiAlpha(int i, std::vector<double> const &pos, double phi0, double r2)
+{ // Calculates nabla^2 phi_i given i, r and exp(-alpha*omega*r2)
+    int nx = m_nxny[i][0], ny = m_nxny[i][1];
+    double Hx, Hy, Hx_, Hy_, rho = m_sqrtAO, omega = m_parameters[2];
+    Hx = hermite(nx, pos[0]);
+    Hx_ = hermiteAlpha(nx, pos[0]);
+    Hy = hermite(ny, pos[1]);
+    Hy_ = hermiteAlpha(ny, pos[1]);
+    return ((Hx * Hy_ + Hx_ * Hy) / (rho * M_SQRT2) - r2 * Hx * Hy) * omega * phi0;
 }
 
 double InteractingGaussianFermion::hermite(int i, double pos)
@@ -205,6 +217,25 @@ double InteractingGaussianFermion::hermitePrimePrime(int i, double pos)
     }
 }
 
+double InteractingGaussianFermion::hermiteAlpha(int i, double pos)
+{ // Calculates the value of the term in the second derivative of phi_i w.r.t. x
+    double rho = m_sqrtAO;
+    switch (i)
+    {
+    case 0:
+        return 0;
+    case 1:
+        return 2 * pos;
+    case 2:
+        return 8 * rho * pos * pos;
+    case 3:
+        return (24 * rho * rho * pos * pos - 12) * pos;
+    default:
+        assert(false);
+        return 2 * i * hermite(i - 1, pos) * pos;
+    }
+}
+
 void InteractingGaussianFermion::arrayVals(std::vector<double> const &pos, std::vector<double> &output)
 { // Evaluates the values in a column of the Slater matrix, given particles position pos and stores the output in output
     // Pos has to be updated before giving it to this function, output has to already be initialised
@@ -250,6 +281,21 @@ void InteractingGaussianFermion::arrayValsPrimePrime(std::vector<double> const &
     }
 }
 
+void InteractingGaussianFermion::arrayValsAlpha(std::vector<double> const &pos, std::vector<double> &output)
+{ // Evaluates the values in a column of the Slater matrix, given particles position pos and stores the output in output
+    // Pos has to be updated before giving it to this function, output has to already be initialised
+    double r2 = 0, phi0, AO = m_sqrtAO * m_sqrtAO;
+    for (unsigned int i = 0; i < pos.size(); i++)
+    {
+        r2 += pos[i] * pos[i];
+    }
+    phi0 = exp(-1 * AO * r2);
+    for (int i = 0; i < m_n_2; i++)
+    {
+        output[i] = evalPhiAlpha(i, pos, phi0, r2);
+    }
+}
+
 double InteractingGaussianFermion::dotProduct(std::vector<double> &newVals, int index)
 { // Calculates the dot product of a column of the slater matrix with a column of the inverse matrix
     double **invMat = index < m_n_2 ? m_invMatrixUp : m_invMatrixDown;
@@ -266,7 +312,7 @@ std::vector<double> InteractingGaussianFermion::vectorDotProduct(std::vector<std
 { // Calculates the dot product of a column of the slater matrix with a column of the inverse matrix
     double **invMat = index < m_n_2 ? m_invMatrixUp : m_invMatrixDown;
     int indexReduced = index % m_n_2;
-    std::vector<double> sum = std::vector<double>(m_n_2, 0);
+    std::vector<double> sum = std::vector<double>(2, 0);
     for (int i = 0; i < m_n_2; i++)
     {
         sum[0] += newVals[i][0] * invMat[i][indexReduced];
@@ -416,8 +462,16 @@ double InteractingGaussianFermion::phiRatio(std::vector<std::unique_ptr<class Pa
 }
 
 // std::vector<double> InteractingGaussianFermion::getdPhi_dParams(std::vector<std::unique_ptr<class Particle>> &particles)
-std::vector<double> InteractingGaussianFermion::getdPhi_dParams(std::vector<std::unique_ptr<class Particle>> &)
+std::vector<double> InteractingGaussianFermion::getdPhi_dParams(std::vector<std::unique_ptr<class Particle>> &particles)
 {
-
-    return std::vector<double>{0, 0};
+    // Non-interacting part
+    double ddAlpha = 0;
+    std::vector<double> array_vals = std::vector<double>(m_n_2, 0), pos;
+    for (int i = 0; i < m_n; i++)
+    {
+        pos = particles[i]->getPosition();
+        arrayValsAlpha(pos, array_vals);
+        ddAlpha += dotProduct(array_vals, i);
+    }
+    return std::vector<double>{ddAlpha, 0};
 }

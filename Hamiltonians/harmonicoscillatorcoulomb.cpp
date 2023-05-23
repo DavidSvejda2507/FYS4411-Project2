@@ -33,7 +33,7 @@ double HormonicOscillatorCoulomb::computeLocalEnergy(
             r2 += position[i] * position[i];
     }
     // m = omega = 1
-    double potentialEnergy = 0.5 * r2;
+    double potentialEnergy = 0.5 * r2 * m_omega;
     double kineticEnergy = waveFunction.computeDoubleDerivative(particles) * -0.5;
     double interactionEnergy = 0;
     for (unsigned int i = 0; i < N; i++)

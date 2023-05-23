@@ -8,6 +8,7 @@ class TestWavefunction : public WaveFunction
 {
 public:
     TestWavefunction(std::unique_ptr<WaveFunction> wavefunction);
+    TestWavefunction(std::unique_ptr<WaveFunction> wavefunction, std::unique_ptr<WaveFunction> reffunction);
 
     void InitialisePositions(std::vector<std::unique_ptr<class Particle>> &particles);
     void adjustPosition(std::vector<std::unique_ptr<class Particle>> &particles, int index, std::vector<double> step);
@@ -23,4 +24,6 @@ public:
 
 private:
     std::unique_ptr<class WaveFunction> m_wavefunc;
+    std::unique_ptr<class WaveFunction> m_reffunc;
+    int step;
 };

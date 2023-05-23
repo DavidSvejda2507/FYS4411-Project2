@@ -129,15 +129,22 @@ int main(int argc, char *argv[])
         cout << "Optimizing wave function with gradient method " << OPTIMIZATION_ALGORITHM << endl;
         double optimal_energy;
         // LBFGS ALGORITHM :
-        nlopt::opt opt(nlopt::LD_LBFGS, 2);
         if (OPTIMIZATION_ALGORITHM == "GD")
         {
             momentumOptimizer opt(2, &gd_parameters);
+            opt.set_min_objective(wrapSimulation, (void *)&simPar);
+            opt.set_maxeval(nMaxIter);
+            opt.set_ftol_abs(energyTol);
+            opt.optimize(wfParams, optimal_energy);
         }
-        opt.set_min_objective(wrapSimulation, (void *)&simPar);
-        opt.set_maxeval(nMaxIter);
-        opt.set_ftol_abs(energyTol);
-        opt.optimize(wfParams, optimal_energy);
+        else
+        {
+            nlopt::opt opt(nlopt::LD_LBFGS, 2);
+            opt.set_min_objective(wrapSimulation, (void *)&simPar);
+            opt.set_maxeval(nMaxIter);
+            opt.set_ftol_abs(energyTol);
+            opt.optimize(wfParams, optimal_energy);
+        }
     }
     //////////////// THE FOLLOWING LINE DOES A LONG SIMULATION WITHOUT GRADIENT COMPUTATION
     else

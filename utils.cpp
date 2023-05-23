@@ -84,7 +84,7 @@ double wrapSimulation(const std::vector<double> &params, std::vector<double> &gr
 
     // sampler computes gradient
     grad = collective_sampler->computeGradientEtrial();
-
+    // std::cout << grad[0] << '\t' << grad[1] << std::endl;
     return energy;
 }
 
@@ -141,23 +141,24 @@ std::unique_ptr<class Sampler> runSimulation(
 
     auto system = std::make_unique<System>(
         // Construct unique_ptr to Hamiltonian
-        // std::make_unique<HarmonicOscillator>(omega),
-        std::make_unique<HormonicOscillatorCoulomb>(P->omega),
+        std::make_unique<HarmonicOscillator>(P->omega),
+        // std::make_unique<HormonicOscillatorCoulomb>(P->omega),
         // Construct unique_ptr to wave function
-        std::make_unique<TestWavefunction>(
-            // std::make_unique<SimpleGaussian>(params[0])),
-            // std::make_unique<SimpleGaussian3D>(params[0], params[1])),
-            // std::make_unique<InteractingGaussian>(params[0])),
-            // std::make_unique<InteractingGaussian3D>(params[0], params[1])),
-            // std::make_unique<InteractingGaussian2Fermion>(params[0], params[1])),
-            std::make_unique<InteractingGaussianFermion>(params[0], params[1], P->omega)),
+        // std::make_unique<TestWavefunction>(
+        // std::make_unique<SimpleGaussian>(params[0])),
+        // std::make_unique<SimpleGaussian3D>(params[0], params[1])),
+        // std::make_unique<InteractingGaussian>(params[0])),
+        // std::make_unique<InteractingGaussian3D>(params[0], params[1])),
+        // std::make_unique<InteractingGaussian2Fermion>(params[0], params[1])),
+        // std::make_unique<InteractingGaussianFermion>(params[0], params[1], P->omega)),
+        // std::make_unique<InteractingGaussianFermion>(params[0], params[1], P->omega), std::make_unique<SimpleGaussian>(params[0] * P->omega)),
 
         // std::make_unique<SimpleGaussian>(params[0]),
         // std::make_unique<SimpleGaussian3D>(params[0], params[1]),
         // std::make_unique<InteractingGaussian>(params[0]),
         // std::make_unique<InteractingGaussian3D>(params[0], params[1]),
         // std::make_unique<InteractingGaussian2Fermion>(params[0], params[1]),
-        // std::make_unique<InteractingGaussianFermion>(params[0], params[1], P->omega),
+        std::make_unique<InteractingGaussianFermion>(params[0], params[1], P->omega),
         // Construct unique_ptr to solver, and move rng
         std::make_unique<MetropolisHastings>(std::move(rng)),
         // std::make_unique<Metropolis>(std::move(rng)),
@@ -186,12 +187,14 @@ momentumOptimizer::momentumOptimizer(int n_params, GdParams *gd_params)
     m_velocity = std::vector<double>(n_params, 0.0);
     m_gradient = std::vector<double>(n_params, 0.0);
     m_initiated = false;
+    std::cout << "Hi" << std::endl;
 }
 void momentumOptimizer::set_min_objective(obj_func funct, void *func_data)
 {
     m_objective_function = funct;
     m_function_params = func_data;
     m_initiated = true;
+    std::cout << "Hi2" << std::endl;
 }
 double momentumOptimizer::optimize(std::vector<double> &x, double &opt_f)
 {

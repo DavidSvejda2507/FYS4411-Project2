@@ -40,3 +40,6 @@ vmc
 
 # Ignore output data
 *.bin
+
+# Ignore python cache
+__pycache__

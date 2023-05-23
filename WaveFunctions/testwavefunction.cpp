@@ -16,15 +16,27 @@
 
 // #define Nabla2
 // #define Nabla2_Ratio
+#define Nabla2_Ref
 // #define Force
-#define Force_Ratio
+// #define Force_Ratio
+// #define Force_Ref
 // #define ForceMoved
-#define ForceMoved_Ratio
+// #define ForceMoved_Ratio
+// #define ForceMoved_Ref
 // #define PhiRatio
+// #define PhiRatio_Ref
 
 TestWavefunction::TestWavefunction(std::unique_ptr<WaveFunction> wavefunc)
 {
     m_wavefunc = std::move(wavefunc);
+    step = 0;
+}
+
+TestWavefunction::TestWavefunction(std::unique_ptr<WaveFunction> wavefunc, std::unique_ptr<WaveFunction> reffunc)
+{
+    m_wavefunc = std::move(wavefunc);
+    m_reffunc = std::move(reffunc);
+    step = 0;
 }
 
 void TestWavefunction::InitialisePositions(std::vector<std::unique_ptr<class Particle>> &particles)
@@ -46,61 +58,70 @@ double TestWavefunction::computeDoubleDerivative(std::vector<std::unique_ptr<cla
 {
     double nablaAnal = m_wavefunc->computeDoubleDerivative(particles);
 
-#ifdef Nabla2
-    // Numerical calculation
-    double nabla2 = 0, phi, phi_plus, phi_minus;
-    const double dx = 1e-5, dx2_1 = 1 / (dx * dx);
-    int n = particles[0]->getNumberOfDimensions();
-    std::vector<double> step = std::vector<double>(n, 0);
-    phi = m_wavefunc->evaluate(particles);
-    for (unsigned int i = 0; i < particles.size(); i++)
+    step += 1;
+    if (step % 100000 == 0)
     {
-        for (int j = 0; j < n; j++)
+#ifdef Nabla2
+        // Numerical calculation
+        double nabla2 = 0, phi, phi_plus, phi_minus;
+        const double dx = 1e-5, dx2_1 = 1 / (dx * dx);
+        int n = particles[0]->getNumberOfDimensions();
+        std::vector<double> step = std::vector<double>(n, 0);
+        phi = m_wavefunc->evaluate(particles);
+        for (unsigned int i = 0; i < particles.size(); i++)
         {
-            step[j] = dx;
-            m_wavefunc->adjustPosition(particles, i, step);
-            particles[i]->adjustPosition(dx, j);
-            phi_plus = m_wavefunc->evaluate(particles);
-            step[j] = -2 * dx;
-            m_wavefunc->adjustPosition(particles, i, step);
-            particles[i]->adjustPosition(-2 * dx, j);
-            phi_minus = m_wavefunc->evaluate(particles);
-            step[j] = dx;
-            m_wavefunc->adjustPosition(particles, i, step);
-            particles[i]->adjustPosition(dx, j);
-            step[j] = 0;
+            for (int j = 0; j < n; j++)
+            {
+                step[j] = dx;
+                m_wavefunc->adjustPosition(particles, i, step);
+                particles[i]->adjustPosition(dx, j);
+                phi_plus = m_wavefunc->evaluate(particles);
+                step[j] = -2 * dx;
+                m_wavefunc->adjustPosition(particles, i, step);
+                particles[i]->adjustPosition(-2 * dx, j);
+                phi_minus = m_wavefunc->evaluate(particles);
+                step[j] = dx;
+                m_wavefunc->adjustPosition(particles, i, step);
+                particles[i]->adjustPosition(dx, j);
+                step[j] = 0;
 
-            nabla2 += (phi_plus + phi_minus - 2 * phi) * dx2_1;
+                nabla2 += (phi_plus + phi_minus - 2 * phi) * dx2_1;
+            }
         }
-    }
-    nabla2 /= phi;
+        nabla2 /= phi;
 
-    std::cout << "Analytical: " << nablaAnal << "   \t Numerical: " << nabla2 << "   \t Rel Diff: " << abs((nabla2 - nablaAnal) / nabla2) << "   \t Abs Diff: " << abs(nabla2 - nablaAnal) << std::endl;
+        std::cout << "Analytical: " << nablaAnal << "   \t Numerical: " << nabla2 << "   \t Rel Diff: " << abs((nabla2 - nablaAnal) / nabla2) << "   \t Abs Diff: " << abs(nabla2 - nablaAnal) << std::endl;
 #else
 #ifdef Nabla2_Ratio
-    // Numerical calculation
-    double nabla2 = 0, phi_plus, phi_minus;
-    const double dx = 1e-5, dx2_1 = 1 / (dx * dx);
-    int n = particles[0]->getNumberOfDimensions();
-    std::vector<double> step = std::vector<double>(n, 0);
-    for (unsigned int i = 0; i < particles.size(); i++)
-    {
-        for (int j = 0; j < n; j++)
+        // Numerical calculation
+        double nabla2 = 0, phi_plus, phi_minus;
+        const double dx = 1e-5, dx2_1 = 1 / (dx * dx);
+        int n = particles[0]->getNumberOfDimensions();
+        std::vector<double> step = std::vector<double>(n, 0);
+        for (unsigned int i = 0; i < particles.size(); i++)
         {
-            step[j] = dx;
-            phi_plus = sqrt(m_wavefunc->phiRatio(particles, i, step));
-            step[j] = -dx;
-            phi_minus = sqrt(m_wavefunc->phiRatio(particles, i, step));
-            step[j] = 0;
+            for (int j = 0; j < n; j++)
+            {
+                step[j] = dx;
+                phi_plus = sqrt(m_wavefunc->phiRatio(particles, i, step));
+                step[j] = -dx;
+                phi_minus = sqrt(m_wavefunc->phiRatio(particles, i, step));
+                step[j] = 0;
 
-            nabla2 += (phi_plus + phi_minus - 2) * dx2_1;
+                nabla2 += (phi_plus + phi_minus - 2) * dx2_1;
+            }
         }
+
+        std::cout << "Analytical: " << nablaAnal << "   \t Numerical: " << nabla2 << "   \t Rel Diff: " << abs((nabla2 - nablaAnal) / nabla2) << "   \t Abs Diff: " << abs(nabla2 - nablaAnal) << std::endl;
+#else
+#ifdef Nabla2_Ref
+        double nabla2 = m_reffunc->computeDoubleDerivative(particles);
+
+        std::cout << "Analytical: " << nablaAnal << "   \t Numerical: " << nabla2 << "   \t Rel Diff: " << abs((nabla2 - nablaAnal) / nabla2) << "   \t Abs Diff: " << abs(nabla2 - nablaAnal) << std::endl;
+#endif
+#endif
+#endif
     }
-
-    std::cout << "Analytical: " << nablaAnal << "   \t Numerical: " << nabla2 << "   \t Rel Diff: " << abs((nabla2 - nablaAnal) / nabla2) << "   \t Abs Diff: " << abs(nabla2 - nablaAnal) << std::endl;
-#endif
-#endif
-
     return nablaAnal;
 }
 
@@ -159,6 +180,20 @@ std::vector<double> TestWavefunction::quantumForce(std::vector<std::unique_ptr<c
         diff += (forceAnal[j] - force[j]) * (forceAnal[j] - force[j]);
     }
     std::cout << "Abs Diff: " << diff << std::endl;
+#else
+#ifdef Force_Ref
+    // Numerical calculation
+    double diff = 0;
+    int n = particles[0]->getNumberOfDimensions();
+    std::vector<double> force = m_reffunc->quantumForce(particles, index);
+    std::cout << "Force diffs:\t";
+    for (int j = 0; j < n; j++)
+    {
+        std::cout << forceAnal[j] - force[j] << "\t";
+        diff += (forceAnal[j] - force[j]) * (forceAnal[j] - force[j]);
+    }
+    std::cout << "Abs Diff: " << diff << std::endl;
+#endif
 #endif
 #endif
 
@@ -232,6 +267,20 @@ std::vector<double> TestWavefunction::quantumForceMoved(std::vector<std::unique_
     m_wavefunc->adjustPosition(particles, index, step);
     particles[index]->adjustPosition(step);
     std::cout << "Abs Diff: " << diff << std::endl;
+#else
+#ifdef ForceMoved_Ref
+    // Numerical calculation
+    double diff = 0;
+    int n = particles[0]->getNumberOfDimensions();
+    std::vector<double> force = m_reffunc->quantumForceMoved(particles, index, step_);
+    std::cout << "Force diffs:\t";
+    for (int j = 0; j < n; j++)
+    {
+        std::cout << forceAnal[j] - force[j] << "\t";
+        diff += (forceAnal[j] - force[j]) * (forceAnal[j] - force[j]);
+    }
+    std::cout << "Abs Diff: " << diff << std::endl;
+#endif
 #endif
 #endif
 
@@ -260,6 +309,13 @@ double TestWavefunction::phiRatio(std::vector<std::unique_ptr<class Particle>> &
     particles[index]->adjustPosition(step);
     std::cout << "Ratio analytical: " << RatioAnal << "\t Ratio numerical: " << phi_new / phi_old
               << "\t Meta ratio: " << phi_new / (phi_old * RatioAnal) << std::endl;
+#else
+#ifdef PhiRatio_Ref
+    // Numerical calculation
+    double Ratio_ref = m_reffunc->phiRatio(particles, index, step_);
+    std::cout << "Ratio analytical: " << RatioAnal << "\t Ratio numerical: " << Ratio_ref
+              << "\t Meta ratio: " << Ratio_ref / RatioAnal << std::endl;
+#endif
 #endif
 
     return RatioAnal;

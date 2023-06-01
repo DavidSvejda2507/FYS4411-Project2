@@ -192,7 +192,7 @@ void Sampler::computeAverages()
 void Sampler::initiateFile(std::string filename)
 {
     std::ofstream file(filename, std::ofstream::app);
-    file << "#n_particles" << '\t'
+    file << "n_particles" << '\t'
          << "n_dimensions" << '\t'
          << "n_steps" << '\t'
          << "n_accepted_steps" << '\t'
@@ -202,7 +202,8 @@ void Sampler::initiateFile(std::string filename)
          << "beta" << '\t'
          << "a" << '\t'
          << "gradient_alpha" << '\t'
-         << "gradient_beta" << endl;
+         << "gradient_beta" << '\t'
+         << "gradient_omega" << endl;
     file.close();
 }
 

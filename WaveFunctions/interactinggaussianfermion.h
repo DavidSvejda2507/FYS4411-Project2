@@ -19,7 +19,7 @@ public:
     std::vector<double> getdPhi_dParams(std::vector<std::unique_ptr<class Particle>> &particles);
 
 private:
-    int m_n, m_n_2;
+    int m_n, m_n_2, m_dim;
     double m_sqrtAO;
     double **m_invMatrixUp, **m_invMatrixDown;
     std::vector<std::array<int, 2>> m_nxny;
@@ -39,8 +39,12 @@ private:
     void arrayValsAlpha(std::vector<double> const &pos, std::vector<double> &output);
     double dotProduct(std::vector<double> &newVals, int index);
     std::vector<double> vectorDotProduct(std::vector<std::array<double, 2>> &newVals, int index);
+    std::vector<double> quantumForceSlater(std::vector<std::unique_ptr<class Particle>> &particles, int index);
+    std::vector<double> quantumForceJastrow(std::vector<std::unique_ptr<class Particle>> &particles, int index);
     void updateInverseMatrix(int index, std::vector<double> arrayVals);
     void testInverse(std::vector<std::unique_ptr<class Particle>> &particles);
+    void changeAlpha(std::vector<std::unique_ptr<class Particle>> &particles);
+    void changeAlpha(std::vector<std::unique_ptr<class Particle>> &particles, int particle);
     double jPrime(double r);
     double jDoublePrime(double a, double r);
 };

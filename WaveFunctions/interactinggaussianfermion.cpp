@@ -13,11 +13,15 @@
 #include "wavefunction.h"
 
 #include <iostream>
+#define Interaction
+// #define TestDDalpha
+// #define TestDDbeta
 
 InteractingGaussianFermion::InteractingGaussianFermion(double alpha, double beta, double omega)
 {
     // assert(alpha > 0); // If alpha == 0 then the wavefunction doesn't go to zero
-    if (alpha <= 0) alpha = 0.1;
+    if (alpha <= 0) alpha = 1E-2;
+    // if (beta <= 0) beta = 0;
     m_numberOfParameters = 3;
     m_parameters.reserve(3);
     m_parameters.push_back(alpha);
@@ -71,6 +75,7 @@ void InteractingGaussianFermion::InitialisePositions(std::vector<std::unique_ptr
     m_n = (int)particles.size();
     assert(m_n == 2 || m_n == 6 || m_n == 12 || m_n == 20);
     assert(particles[0]->getNumberOfDimensions() == 2);
+    m_dim = particles[0]->getNumberOfDimensions();
     if (m_n > 2 * N)
         std::cout << "Warning: calculating the determinant is not possible" << std::endl;
     m_n_2 = m_n / 2;
@@ -117,7 +122,7 @@ void InteractingGaussianFermion::adjustPosition(std::vector<std::unique_ptr<clas
 
     std::vector<double> array_vals = std::vector<double>(m_n);
     std::vector<double> pos = std::vector<double>(particles[index]->getPosition());
-    for (unsigned int i = 0; i < pos.size(); i++)
+    for (int i = 0; i < m_dim; i++)
     {
         pos[i] += step[i];
     }
@@ -154,7 +159,7 @@ double InteractingGaussianFermion::evalPhiAlpha(int i, std::vector<double> const
     Hx_ = hermiteAlpha(nx, pos[0]);
     Hy = hermite(ny, pos[1]);
     Hy_ = hermiteAlpha(ny, pos[1]);
-    return ((Hx * Hy_ + Hx_ * Hy) / (rho * M_SQRT2) - r2 * Hx * Hy) * omega * phi0;
+    return ((Hx * Hy_ + Hx_ * Hy) / (rho * 2) - r2 * Hx * Hy) * omega * phi0;
 }
 
 double InteractingGaussianFermion::hermite(int i, double pos)
@@ -206,9 +211,10 @@ double InteractingGaussianFermion::hermitePrimePrime(int i, double pos)
     case 0:
         return (4 * rho2 * pos2 - 2) * rho2;
     case 1:
-        return ((rho2 * pos2 - rho - 0.5) * 8 * rho2) * pos;
+        // std::cout << hermite(i, pos) << "\t" << 2 * pos << std::endl;
+        return (-12 + 8 * rho2 * pos2) * rho2 * rho * pos;
     case 2:
-        return ((2 * rho2 * pos2 - rho2 - 4 * rho - 1) * 8 * pos2 - 12) * rho2;
+        return ((16 * rho2 * pos2 - 48) * rho2 * pos2 + 4) * rho2;
     case 3:
         return ((rho2 * pos2 - 5) * 32 * rho2 * pos2 - 24) * rho2 * rho * pos;
     default:
@@ -225,6 +231,7 @@ double InteractingGaussianFermion::hermiteAlpha(int i, double pos)
     case 0:
         return 0;
     case 1:
+        return 2 * i * hermite(i - 1, pos) * pos;
         return 2 * pos;
     case 2:
         return 8 * rho * pos * pos;
@@ -240,7 +247,7 @@ void InteractingGaussianFermion::arrayVals(std::vector<double> const &pos, std::
 { // Evaluates the values in a column of the Slater matrix, given particles position pos and stores the output in output
     // Pos has to be updated before giving it to this function, output has to already be initialised
     double r2 = 0, phi0, alpha = m_parameters[0], omega = m_parameters[2];
-    for (unsigned int i = 0; i < pos.size(); i++)
+    for (int i = 0; i < m_dim; i++)
     {
         r2 += pos[i] * pos[i];
     }
@@ -255,7 +262,7 @@ void InteractingGaussianFermion::arrayValsPrime(std::vector<double> const &pos, 
 { // Evaluates the values in a column of the Slater matrix, given particles position pos and stores the output in output
     // Pos has to be updated before giving it to this function, output has to already be initialised
     double r2 = 0, phi0, alpha = m_parameters[0], omega = m_parameters[2];
-    for (unsigned int i = 0; i < pos.size(); i++)
+    for (int i = 0; i < m_dim; i++)
     {
         r2 += pos[i] * pos[i];
     }
@@ -270,7 +277,7 @@ void InteractingGaussianFermion::arrayValsPrimePrime(std::vector<double> const &
 { // Evaluates the values in a column of the Slater matrix, given particles position pos and stores the output in output
     // Pos has to be updated before giving it to this function, output has to already be initialised
     double r2 = 0, phi0, AO = m_sqrtAO * m_sqrtAO;
-    for (unsigned int i = 0; i < pos.size(); i++)
+    for (int i = 0; i < m_dim; i++)
     {
         r2 += pos[i] * pos[i];
     }
@@ -285,7 +292,7 @@ void InteractingGaussianFermion::arrayValsAlpha(std::vector<double> const &pos, 
 { // Evaluates the values in a column of the Slater matrix, given particles position pos and stores the output in output
     // Pos has to be updated before giving it to this function, output has to already be initialised
     double r2 = 0, phi0, AO = m_sqrtAO * m_sqrtAO;
-    for (unsigned int i = 0; i < pos.size(); i++)
+    for (int i = 0; i < m_dim; i++)
     {
         r2 += pos[i] * pos[i];
     }
@@ -386,20 +393,24 @@ double InteractingGaussianFermion::evaluate(std::vector<std::unique_ptr<class Pa
     }
     phi /= determinantOfMatrix(mat, m_n_2);
 
-    // testInverse(particles);
+// testInverse(particles);
+#ifdef Interaction
+    std::vector<double> pos1, pos2;
+    double r2, r, a, beta = m_parameters[1];
+    for (int i = 0; i < m_n; i++)
+    {
+        pos1 = particles[i]->getPosition();
+        for (int j = 0; j < i; j++)
+        {
+            pos2 = particles[j]->getPosition();
 
-    // for (unsigned int i = 0; i < particles.size(); i++)
-    // {
-    //     for (unsigned int j = i + 1; j < particles.size(); j++)
-    //     {
-    //         phi *= exp(a*)
-    //     }
-    // }
-    // auto pos1 = particles[0]->getPosition();
-    // auto pos2 = particles[1]->getPosition();
-    // r2 = (pos1[0] - pos2[0]) * (pos1[0] - pos2[0]) + (pos1[1] - pos2[1]) * (pos1[1] - pos2[1]);
-    // double r = sqrt(r2);
-    // phi *= exp(r / (1 + beta * r));
+            r2 = (pos1[0] - pos2[0]) * (pos1[0] - pos2[0]) + (pos1[1] - pos2[1]) * (pos1[1] - pos2[1]);
+            r = sqrt(r2);
+            a = (i % m_n_2) == (j % m_n_2) ? 3 : 1; // We divide by 1/a instead of multiplying by a, because 3 is easier to use than 1/3
+            phi *= exp(r / (a * (1 + beta * r)));
+        }
+    }
+#endif
     return phi;
 }
 
@@ -416,16 +427,80 @@ double InteractingGaussianFermion::computeDoubleDerivative(std::vector<std::uniq
         arrayValsPrimePrime(pos, array_vals);
         nabla2 += dotProduct(array_vals, i);
     }
+#ifdef Interaction
+    std::vector<double> force, interForce;
+    for (int i = 0; i < m_n; i++)
+    {
+        force = quantumForceSlater(particles, i);
+        interForce = quantumForceJastrow(particles, i);
+        for (int j = 0; j < m_dim; j++)
+        {
+            nabla2 += (2 * force[j] + interForce[j]) * interForce[j];
+        }
+    }
+
+    std::vector<double> pos1, pos2;
+    double r2, r, br1, a, beta = m_parameters[1];
+    for (int i = 0; i < m_n; i++)
+    {
+        pos1 = particles[i]->getPosition();
+        for (int j = 0; j < i; j++)
+        {
+            pos2 = particles[j]->getPosition();
+
+            r2 = (pos1[0] - pos2[0]) * (pos1[0] - pos2[0]) + (pos1[1] - pos2[1]) * (pos1[1] - pos2[1]);
+            r = sqrt(r2);
+            br1 = beta * r + 1;
+            a = (i % m_n_2) == (j % m_n_2) ? 3 : 1; // We divide by 1/a instead of multiplying by a, because 3 is easier to use than 1/3
+            // We assume that the number of dimensions = 2
+            nabla2 += 2 * (1 - beta * r) / (a * r * br1 * br1 * br1);
+        }
+    }
+
+#endif
     return nabla2;
+}
+
+std::vector<double> InteractingGaussianFermion::quantumForceSlater(std::vector<std::unique_ptr<class Particle>> &particles, int index)
+{
+    std::vector<double> pos = particles[index]->getPosition();
+    std::vector<std::array<double, 2>> array_vals = std::vector<std::array<double, 2>>(m_n_2);
+    arrayValsPrime(pos, array_vals);
+    return vectorDotProduct(array_vals, index);
+}
+
+std::vector<double> InteractingGaussianFermion::quantumForceJastrow(std::vector<std::unique_ptr<class Particle>> &particles, int index)
+{
+    double a, r2, r, br1, beta = m_parameters[1];
+    std::vector<double> pos, pos1, force;
+    pos = particles[index]->getPosition();
+    force = std::vector<double>(2, 0);
+    for (int i = 0; i < m_n; i++)
+    {
+        if (i == index) continue;
+        pos1 = particles[i]->getPosition();
+        a = (i % m_n_2) == (index % m_n_2) ? 3 : 1; // We divide by 1/a instead of multiplying by a, because 3 is easier to use than 1/3
+        r2 = (pos[0] - pos1[0]) * (pos[0] - pos1[0]) + (pos[1] - pos1[1]) * (pos[1] - pos1[1]);
+        r = sqrt(r2);
+        br1 = beta * r + 1;
+        force[0] += (pos[0] - pos1[0]) / (a * r * br1 * br1);
+        force[1] += (pos[1] - pos1[1]) / (a * r * br1 * br1);
+    }
+    return force;
 }
 
 std::vector<double> InteractingGaussianFermion::quantumForce(std::vector<std::unique_ptr<class Particle>> &particles, int index)
 {
     //***************WE RETURN d/dx(phi)/phi NOT d/dx(phi)*********************
-    std::vector<double> pos = particles[index]->getPosition();
-    std::vector<std::array<double, 2>> array_vals = std::vector<std::array<double, 2>>(m_n_2);
-    arrayValsPrime(pos, array_vals);
-    return vectorDotProduct(array_vals, index);
+    std::vector<double> force = quantumForceSlater(particles, index);
+#ifdef Interaction
+    std::vector<double> interForce = quantumForceJastrow(particles, index);
+    for (int i = 0; i < m_dim; i++)
+    {
+        force[i] += interForce[i];
+    }
+#endif
+    return force;
 }
 
 std::vector<double> InteractingGaussianFermion::quantumForceMoved(std::vector<std::unique_ptr<class Particle>> &particles, int index, std::vector<double> &step)
@@ -446,6 +521,23 @@ std::vector<double> InteractingGaussianFermion::quantumForceMoved(std::vector<st
     double det_ratio = dotProduct(array_vals, index);
     force[0] /= det_ratio;
     force[1] /= det_ratio;
+
+#ifdef Interaction
+    double a, r2, r, br1, beta = m_parameters[1];
+    std::vector<double> pos1;
+    for (int i = 0; i < m_n; i++)
+    {
+        if (i == index) continue;
+        pos1 = particles[i]->getPosition();
+        a = (i % m_n_2) == (index % m_n_2) ? 3 : 1; // We divide by 1/a instead of multiplying by a, because 3 is easier to use than 1/3
+        r2 = (pos[0] - pos1[0]) * (pos[0] - pos1[0]) + (pos[1] - pos1[1]) * (pos[1] - pos1[1]);
+        r = sqrt(r2);
+        br1 = beta * r + 1;
+        force[0] += (pos[0] - pos1[0]) / (a * r * br1 * br1);
+        force[1] += (pos[1] - pos1[1]) / (a * r * br1 * br1);
+    }
+#endif
+
     return force;
 }
 
@@ -453,19 +545,53 @@ double InteractingGaussianFermion::phiRatio(std::vector<std::unique_ptr<class Pa
 {
     // Calculate (phi(new)/phi(old))**2
     std::vector<double> array_vals = std::vector<double>(m_n_2, 0);
-    std::vector<double> pos = std::vector<double>(particles[index]->getPosition());
-    pos[0] += step[0];
-    pos[1] += step[1];
-    arrayVals(pos, array_vals);
+    std::vector<double> pos = particles[index]->getPosition();
+    std::vector<double> pos_new = std::vector<double>(2);
+    pos_new[0] = pos[0] + step[0];
+    pos_new[1] = pos[1] + step[1];
+    arrayVals(pos_new, array_vals);
     double ratio = dotProduct(array_vals, index);
+
+#ifdef Interaction
+    double a, r2, r, r_new, beta = m_parameters[1], sum = 0;
+    std::vector<double> pos1;
+    for (int i = 0; i < m_n; i++)
+    {
+        if (i == index) continue;
+        pos1 = particles[i]->getPosition();
+        a = (i % m_n_2) == (index % m_n_2) ? 3 : 1; // We divide by 1/a instead of multiplying by a, because 3 is easier to use than 1/3
+        r2 = (pos[0] - pos1[0]) * (pos[0] - pos1[0]) + (pos[1] - pos1[1]) * (pos[1] - pos1[1]);
+        r = sqrt(r2);
+        r2 = (pos_new[0] - pos1[0]) * (pos_new[0] - pos1[0]) + (pos_new[1] - pos1[1]) * (pos_new[1] - pos1[1]);
+        r_new = sqrt(r2);
+        sum += r_new / (a * (1 + beta * r_new)) - r / (a * (1 + beta * r));
+    }
+    ratio *= exp(sum);
+#endif
+
     return ratio * ratio;
 }
 
-// std::vector<double> InteractingGaussianFermion::getdPhi_dParams(std::vector<std::unique_ptr<class Particle>> &particles)
+void InteractingGaussianFermion::changeAlpha(std::vector<std::unique_ptr<class Particle>> &particles)
+{
+    std::vector<double> array_vals = std::vector<double>(m_n_2);
+    for (int i = 0; i < m_n; i++)
+    {
+        arrayVals(particles[i]->getPosition(), array_vals);
+        updateInverseMatrix(i, array_vals);
+    }
+}
+void InteractingGaussianFermion::changeAlpha(std::vector<std::unique_ptr<class Particle>> &particles, int i)
+{
+    std::vector<double> array_vals = std::vector<double>(m_n_2);
+    arrayVals(particles[i]->getPosition(), array_vals);
+    updateInverseMatrix(i, array_vals);
+}
+
 std::vector<double> InteractingGaussianFermion::getdPhi_dParams(std::vector<std::unique_ptr<class Particle>> &particles)
 {
     // Non-interacting part
-    double ddAlpha = 0;
+    double ddAlpha = 0, ddBeta = 0;
     std::vector<double> array_vals = std::vector<double>(m_n_2, 0), pos;
     for (int i = 0; i < m_n; i++)
     {
@@ -473,5 +599,64 @@ std::vector<double> InteractingGaussianFermion::getdPhi_dParams(std::vector<std:
         arrayValsAlpha(pos, array_vals);
         ddAlpha += dotProduct(array_vals, i);
     }
-    return std::vector<double>{ddAlpha, 0};
+
+#ifdef TestDDalpha
+    // Numerical calculation
+    double phi, phi_plus, phi_minus, grad = 0, alpha = m_parameters[0], omega = m_parameters[2];
+    const double dalpha = 1e-5, dalpha2 = 2 * dalpha;
+    phi = evaluate(particles);
+    m_parameters[0] = alpha + dalpha;
+    m_sqrtAO = sqrt((alpha + dalpha) * omega);
+    changeAlpha(particles);
+    phi_plus = evaluate(particles);
+    m_parameters[0] = alpha - dalpha;
+    m_sqrtAO = sqrt((alpha - dalpha) * omega);
+    changeAlpha(particles);
+    phi_minus = evaluate(particles);
+    m_parameters[0] = alpha;
+    m_sqrtAO = sqrt(alpha * omega);
+    changeAlpha(particles);
+
+    grad = (phi_plus - phi_minus) / (dalpha2 * phi);
+    std::cout << "ddAlpha: " << ddAlpha << "\tddAlpha Diff: " << grad - ddAlpha << std::endl;
+
+#endif
+#ifdef Interaction
+    std::vector<double> pos1, pos2;
+    double r2, r, br1, a, beta = m_parameters[1];
+    for (int i = 0; i < m_n; i++)
+    {
+        pos1 = particles[i]->getPosition();
+        for (int j = 0; j < i; j++)
+        {
+            pos2 = particles[j]->getPosition();
+
+            r2 = (pos1[0] - pos2[0]) * (pos1[0] - pos2[0]) + (pos1[1] - pos2[1]) * (pos1[1] - pos2[1]);
+            r = sqrt(r2);
+            br1 = beta * r + 1;
+            a = (i % m_n_2) == (j % m_n_2) ? 3 : 1; // We divide by 1/a instead of multiplying by a, because 3 is easier to use than 1/3
+            // We assume that the number of dimensions = 2
+            ddBeta -= r2 / (a * br1 * br1);
+        }
+    }
+#ifdef TestDDbeta
+// Numerical calculation
+#ifdef TestDDalpha
+#else
+    double phi, phi_plus, phi_minus, grad = 0;
+#endif
+    const double dbeta = 1e-5, dbeta2 = 2 * dbeta;
+    phi = evaluate(particles);
+    m_parameters[1] = beta + dbeta;
+    phi_plus = evaluate(particles);
+    m_parameters[1] = beta - dbeta;
+    phi_minus = evaluate(particles);
+    m_parameters[1] = beta;
+
+    grad = (phi_plus - phi_minus) / (dbeta2 * phi);
+    std::cout << "ddBeta: " << ddBeta << "\tddBeta Diff: " << grad - ddBeta << std::endl;
+#endif
+
+#endif
+    return std::vector<double>{ddAlpha, ddBeta};
 }

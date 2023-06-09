@@ -17,7 +17,7 @@
 // #define TestDDalpha
 // #define TestDDbeta
 
-InteractingGaussianFermion::InteractingGaussianFermion(double alpha, double beta, double omega)
+InteractingGaussianFermion::InteractingGaussianFermion(double alpha, double beta, double omega, bool grad_optimisation)
 {
     // assert(alpha > 0); // If alpha == 0 then the wavefunction doesn't go to zero
     if (alpha <= 0) alpha = 1E-2;
@@ -28,6 +28,7 @@ InteractingGaussianFermion::InteractingGaussianFermion(double alpha, double beta
     m_parameters.push_back(beta);
     m_parameters.push_back(omega);
     m_sqrtAO = sqrt(alpha * omega);
+    m_grad_optimisation = grad_optimisation;
 }
 
 InteractingGaussianFermion::~InteractingGaussianFermion()
@@ -109,10 +110,25 @@ void InteractingGaussianFermion::InitialisePositions(std::vector<std::unique_ptr
         m_invMatrixDown[i][i] = 1;
     }
     std::vector<double> array_vals = std::vector<double>(m_n_2);
+    m_phi_prime = std::vector<std::vector<std::array<double, 2>>>(m_n);
+    m_phi_primePrime = std::vector<std::vector<double>>(m_n);
+    if (m_grad_optimisation) m_phi_alpha = std::vector<std::vector<double>>(m_n);
+
+    std::vector<double> pos;
     for (int i = 0; i < m_n; i++)
     {
-        arrayVals(particles[i]->getPosition(), array_vals);
+        pos = particles[i]->getPosition();
+        arrayVals(pos, array_vals);
         updateInverseMatrix(i, array_vals);
+        m_phi_prime[i] = std::vector<std::array<double, 2>>(m_n_2);
+        arrayValsPrime(pos, m_phi_prime[i]);
+        m_phi_primePrime[i] = std::vector<double>(m_n_2);
+        arrayValsPrimePrime(pos, m_phi_primePrime[i]);
+        if (m_grad_optimisation)
+        {
+            m_phi_alpha[i] = std::vector<double>(m_n_2);
+            arrayValsAlpha(pos, m_phi_alpha[i]);
+        }
     }
     // testInverse(particles);
 }
@@ -128,6 +144,9 @@ void InteractingGaussianFermion::adjustPosition(std::vector<std::unique_ptr<clas
     }
     arrayVals(pos, array_vals);
     updateInverseMatrix(index, array_vals);
+    arrayValsPrime(pos, m_phi_prime[index]);
+    arrayValsPrimePrime(pos, m_phi_primePrime[index]);
+    if (m_grad_optimisation) arrayValsAlpha(pos, m_phi_alpha[index]);
 }
 
 double InteractingGaussianFermion::evalPhi(int i, std::vector<double> const &pos, double phi0)
@@ -303,27 +322,27 @@ void InteractingGaussianFermion::arrayValsAlpha(std::vector<double> const &pos, 
     }
 }
 
-double InteractingGaussianFermion::dotProduct(std::vector<double> &newVals, int index)
+double InteractingGaussianFermion::dotProduct(std::vector<double> &vals, int index)
 { // Calculates the dot product of a column of the slater matrix with a column of the inverse matrix
     double **invMat = index < m_n_2 ? m_invMatrixUp : m_invMatrixDown;
     int indexReduced = index % m_n_2;
     double sum = 0;
     for (int i = 0; i < m_n_2; i++)
     {
-        sum += newVals[i] * invMat[i][indexReduced];
+        sum += vals[i] * invMat[i][indexReduced];
     }
     return sum;
 }
 
-std::vector<double> InteractingGaussianFermion::vectorDotProduct(std::vector<std::array<double, 2>> &newVals, int index)
+std::vector<double> InteractingGaussianFermion::vectorDotProduct(std::vector<std::array<double, 2>> &vals, int index)
 { // Calculates the dot product of a column of the slater matrix with a column of the inverse matrix
     double **invMat = index < m_n_2 ? m_invMatrixUp : m_invMatrixDown;
     int indexReduced = index % m_n_2;
     std::vector<double> sum = std::vector<double>(2, 0);
     for (int i = 0; i < m_n_2; i++)
     {
-        sum[0] += newVals[i][0] * invMat[i][indexReduced];
-        sum[1] += newVals[i][1] * invMat[i][indexReduced];
+        sum[0] += vals[i][0] * invMat[i][indexReduced];
+        sum[1] += vals[i][1] * invMat[i][indexReduced];
     }
     return sum;
 }
@@ -420,18 +439,15 @@ double InteractingGaussianFermion::computeDoubleDerivative(std::vector<std::uniq
 
     // Non-interacting part
     double nabla2 = 0;
-    std::vector<double> array_vals = std::vector<double>(m_n_2, 0), pos;
     for (int i = 0; i < m_n; i++)
     {
-        pos = particles[i]->getPosition();
-        arrayValsPrimePrime(pos, array_vals);
-        nabla2 += dotProduct(array_vals, i);
+        nabla2 += dotProduct(m_phi_primePrime[i], i);
     }
 #ifdef Interaction
     std::vector<double> force, interForce;
     for (int i = 0; i < m_n; i++)
     {
-        force = quantumForceSlater(particles, i);
+        force = quantumForceSlater(i);
         interForce = quantumForceJastrow(particles, i);
         for (int j = 0; j < m_dim; j++)
         {
@@ -456,17 +472,14 @@ double InteractingGaussianFermion::computeDoubleDerivative(std::vector<std::uniq
             nabla2 += 2 * (1 - beta * r) / (a * r * br1 * br1 * br1);
         }
     }
-
 #endif
+
     return nabla2;
 }
 
-std::vector<double> InteractingGaussianFermion::quantumForceSlater(std::vector<std::unique_ptr<class Particle>> &particles, int index)
+std::vector<double> InteractingGaussianFermion::quantumForceSlater(int index)
 {
-    std::vector<double> pos = particles[index]->getPosition();
-    std::vector<std::array<double, 2>> array_vals = std::vector<std::array<double, 2>>(m_n_2);
-    arrayValsPrime(pos, array_vals);
-    return vectorDotProduct(array_vals, index);
+    return vectorDotProduct(m_phi_prime[index], index);
 }
 
 std::vector<double> InteractingGaussianFermion::quantumForceJastrow(std::vector<std::unique_ptr<class Particle>> &particles, int index)
@@ -492,7 +505,7 @@ std::vector<double> InteractingGaussianFermion::quantumForceJastrow(std::vector<
 std::vector<double> InteractingGaussianFermion::quantumForce(std::vector<std::unique_ptr<class Particle>> &particles, int index)
 {
     //***************WE RETURN d/dx(phi)/phi NOT d/dx(phi)*********************
-    std::vector<double> force = quantumForceSlater(particles, index);
+    std::vector<double> force = quantumForceSlater(index);
 #ifdef Interaction
     std::vector<double> interForce = quantumForceJastrow(particles, index);
     for (int i = 0; i < m_dim; i++)
@@ -581,12 +594,6 @@ void InteractingGaussianFermion::changeAlpha(std::vector<std::unique_ptr<class P
         updateInverseMatrix(i, array_vals);
     }
 }
-void InteractingGaussianFermion::changeAlpha(std::vector<std::unique_ptr<class Particle>> &particles, int i)
-{
-    std::vector<double> array_vals = std::vector<double>(m_n_2);
-    arrayVals(particles[i]->getPosition(), array_vals);
-    updateInverseMatrix(i, array_vals);
-}
 
 std::vector<double> InteractingGaussianFermion::getdPhi_dParams(std::vector<std::unique_ptr<class Particle>> &particles)
 {
@@ -595,9 +602,16 @@ std::vector<double> InteractingGaussianFermion::getdPhi_dParams(std::vector<std:
     std::vector<double> array_vals = std::vector<double>(m_n_2, 0), pos;
     for (int i = 0; i < m_n; i++)
     {
-        pos = particles[i]->getPosition();
-        arrayValsAlpha(pos, array_vals);
-        ddAlpha += dotProduct(array_vals, i);
+        if (m_grad_optimisation)
+        {
+            ddAlpha += dotProduct(m_phi_alpha[i], i);
+        }
+        else
+        {
+            pos = particles[i]->getPosition();
+            arrayValsAlpha(pos, array_vals);
+            ddAlpha += dotProduct(array_vals, i);
+        }
     }
 
 #ifdef TestDDalpha

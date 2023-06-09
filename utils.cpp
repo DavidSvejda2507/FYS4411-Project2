@@ -21,6 +21,8 @@
 #include <nlopt.hpp>
 #include <vector>
 
+// #define Testing
+
 std::seed_seq seq{std::random_device{}()};
 
 double wrapSimulation(const std::vector<double> &params, std::vector<double> &grad, void *xPtr)
@@ -144,22 +146,24 @@ std::unique_ptr<class Sampler> runSimulation(
         // Construct unique_ptr to Hamiltonian
         // std::make_unique<HarmonicOscillator>(P->omega),
         std::make_unique<HormonicOscillatorCoulomb>(P->omega),
-        // Construct unique_ptr to wave function
+// Construct unique_ptr to wave function
+#ifdef Testing
         std::make_unique<TestWavefunction>(
             // std::make_unique<SimpleGaussian>(params[0])),
             // std::make_unique<SimpleGaussian3D>(params[0], params[1])),
             // std::make_unique<InteractingGaussian>(params[0])),
             // std::make_unique<InteractingGaussian3D>(params[0], params[1])),
             // std::make_unique<InteractingGaussian2Fermion>(params[0], params[1])),
-            std::make_unique<InteractingGaussianFermion>(params[0], params[1], P->omega)),
-        // std::make_unique<InteractingGaussianFermion>(params[0], params[1], P->omega), std::make_unique<SimpleGaussian>(params[0] * P->omega)),
-
+            std::make_unique<InteractingGaussianFermion>(params[0], params[1], P->omega, P->calculateGradients)),
+    // std::make_unique<InteractingGaussianFermion>(params[0], params[1], P->omega), std::make_unique<SimpleGaussian>(params[0] * P->omega)),
+#else
         // std::make_unique<SimpleGaussian>(params[0]),
         // std::make_unique<SimpleGaussian3D>(params[0], params[1]),
         // std::make_unique<InteractingGaussian>(params[0]),
         // std::make_unique<InteractingGaussian3D>(params[0], params[1]),
         // std::make_unique<InteractingGaussian2Fermion>(params[0], params[1]),
-        // std::make_unique<InteractingGaussianFermion>(params[0], params[1], P->omega),
+        std::make_unique<InteractingGaussianFermion>(params[0], params[1], P->omega, P->calculateGradients),
+#endif
         // Construct unique_ptr to solver, and move rng
         std::make_unique<MetropolisHastings>(std::move(rng)),
         // std::make_unique<Metropolis>(std::move(rng)),

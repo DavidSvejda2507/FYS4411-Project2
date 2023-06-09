@@ -54,50 +54,13 @@ bool MetropolisHastings::step(
         temp = step[i] + forceY[i] * dt * 0.5;
         greensDiff -= temp * temp;
     }
-
     double hastingsArticle = waveFunction.phiRatio(particles, index, step) * exp(greensDiff / (2 * dt));
-
-    // For testing:
-    // testGradient(waveFunction, particles, force, index);
-    // waveFunction.evaluate(particles);
 
     if (m_rng->nextDouble() < (hastingsArticle))
     {
         waveFunction.adjustPosition(particles, index, step);
         particles[index]->adjustPosition(step);
-        // For testing:
-        // cout << "Moved:" << endl;
-        // testGradient(waveFunction, particles, forceY, index);
-        // cout << "End moved" << endl;
         return true;
     }
     return false;
-}
-
-void testGradient(class WaveFunction &WaveFunction,
-                  std::vector<std::unique_ptr<class Particle>> &particles,
-                  std::vector<double> force,
-                  int index)
-{
-    double dx = 1e-3, phiPlus, phiMinus, grad, phi = WaveFunction.evaluate(particles), norm = 0;
-    for (unsigned int dim = 0; dim < force.size(); dim++)
-        norm += force[dim] * force[dim];
-    std::vector<double> step = std::vector<double>(force.size(), 0);
-    for (unsigned int dim = 0; dim < force.size(); dim++)
-    {
-        step[dim] = dx;
-        WaveFunction.adjustPosition(particles, index, step);
-        particles[index]->adjustPosition(dx, dim);
-        phiPlus = WaveFunction.evaluate(particles);
-        step[dim] = -2 * dx;
-        WaveFunction.adjustPosition(particles, index, step);
-        particles[index]->adjustPosition(-2 * dx, dim);
-        phiMinus = WaveFunction.evaluate(particles);
-        step[dim] = dx;
-        WaveFunction.adjustPosition(particles, index, step);
-        particles[index]->adjustPosition(dx, dim);
-        grad = (phiPlus - phiMinus) / (2 * dx * phi);
-        step[dim] = 0;
-        cout << "Grad Error = " << abs(grad - force[dim]) << "    \t Rel Grad Error = " << (abs(grad - force[dim])) / norm << endl;
-    }
 }

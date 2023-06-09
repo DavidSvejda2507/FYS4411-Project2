@@ -15,13 +15,13 @@
 #include <iostream>
 
 // #define Nabla2
-// #define Nabla2_Ratio
+#define Nabla2_Ratio
 // #define Nabla2_Ref
 // #define Force
-// #define Force_Ratio
+#define Force_Ratio
 // #define Force_Ref
 // #define ForceMoved
-// #define ForceMoved_Ratio
+#define ForceMoved_Ratio
 // #define ForceMoved_Ref
 // #define PhiRatio
 // #define PhiRatio_Ref
@@ -90,7 +90,7 @@ double TestWavefunction::computeDoubleDerivative(std::vector<std::unique_ptr<cla
     }
     nabla2 /= phi;
 
-    std::cout << "Analytical: " << nablaAnal << "   \t Numerical: " << nabla2 << "   \t Rel Diff: " << abs((nabla2 - nablaAnal) / nabla2) << "   \t Abs Diff: " << abs(nabla2 - nablaAnal) << std::endl;
+    std::cout << "Analytical: " << nablaAnal << "  \t Numerical: " << nabla2 << "   \t Rel Diff: " << abs((nabla2 - nablaAnal) / nabla2) << "   \t Abs Diff: " << abs(nabla2 - nablaAnal) << std::endl;
 #else
 #ifdef Nabla2_Ratio
     // Numerical calculation
@@ -112,12 +112,12 @@ double TestWavefunction::computeDoubleDerivative(std::vector<std::unique_ptr<cla
         }
     }
 
-    std::cout << "Analytical: " << nablaAnal << "   \t Numerical: " << nabla2 << "   \t Rel Diff: " << abs((nabla2 - nablaAnal) / nabla2) << "   \t Abs Diff: " << abs(nabla2 - nablaAnal) << std::endl;
+    std::cout << "Analytical: " << nablaAnal << "  \t Numerical: " << nabla2 << "   \t Rel Diff: " << abs((nabla2 - nablaAnal) / nabla2) << "   \t Abs Diff: " << abs(nabla2 - nablaAnal) << std::endl;
 #else
 #ifdef Nabla2_Ref
     double nabla2 = m_reffunc->computeDoubleDerivative(particles);
 
-    std::cout << "Analytical: " << nablaAnal << "   \t Numerical: " << nabla2 << "   \t Rel Diff: " << abs((nabla2 - nablaAnal) / nabla2) << "   \t Abs Diff: " << abs(nabla2 - nablaAnal) << std::endl;
+    std::cout << "Analytical: " << nablaAnal << "  \t Numerical: " << nabla2 << "   \t Rel Diff: " << abs((nabla2 - nablaAnal) / nabla2) << "   \t Abs Diff: " << abs(nabla2 - nablaAnal) << std::endl;
 #endif
 #endif
 #endif

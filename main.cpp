@@ -13,6 +13,8 @@ m = 1
 omega = 1
 */
 
+#define TIMEING // Comment out turn off timing
+
 int main(int argc, char *argv[])
 {
 
@@ -114,7 +116,7 @@ int main(int argc, char *argv[])
 
     simPar.a_ho = std::sqrt(1. / simPar.omega); // Characteristic size of the Harmonic Oscillator
     simPar.stepLength *= simPar.a_ho;           // Scale the steplength in case of changed omega
-// #define TIMEING // Comment out turn off timing
+
 #ifdef TIMEING
     auto times = vector<int>();
     using std::chrono::duration;

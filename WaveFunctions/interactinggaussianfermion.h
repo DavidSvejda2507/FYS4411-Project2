@@ -20,7 +20,8 @@ public:
     std::vector<double> getdPhi_dParams(std::vector<std::unique_ptr<class Particle>> &particles);
 
 private:
-    int m_n, m_n_2, m_dim;
+    int m_n, m_n_2;
+    const int m_dim = 2;
     double m_sqrtAO;
     double **m_invMatrixUp, **m_invMatrixDown;
     std::vector<std::array<int, 2>> m_nxny;
@@ -29,6 +30,12 @@ private:
     std::vector<std::vector<double>> m_phi_primePrime;
     std::vector<std::vector<double>> m_phi_alpha;
     bool m_grad_optimisation;
+
+    std::vector<std::vector<double>> m_distances;
+    std::vector<std::vector<double>> m_jPrime;
+    std::vector<std::vector<double>> m_jDoublePrime;
+    std::vector<double> m_interForcesJastrow;
+
     // std::vector<std::vector<double>> m_distances;
     // std::vector<double> m_interForces;
     double evalPhi(int i, std::vector<double> const &pos, double phi0);
@@ -50,6 +57,6 @@ private:
     void updateInverseMatrix(int index, std::vector<double> arrayVals);
     void testInverse(std::vector<std::unique_ptr<class Particle>> &particles);
     void changeAlpha(std::vector<std::unique_ptr<class Particle>> &particles);
-    double jPrime(double r);
+    double jPrime(double a, double r);
     double jDoublePrime(double a, double r);
 };

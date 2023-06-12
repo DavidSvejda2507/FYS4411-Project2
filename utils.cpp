@@ -21,7 +21,7 @@
 #include <nlopt.hpp>
 #include <vector>
 
-// #define Testing
+#define Testing
 
 std::seed_seq seq{std::random_device{}()};
 

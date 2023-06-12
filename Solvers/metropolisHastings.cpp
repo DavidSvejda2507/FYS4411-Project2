@@ -37,6 +37,10 @@ bool MetropolisHastings::step(
     {
         noise.push_back(m_rng->nextGaussian(0, 1) * sqrtdt);
         step.push_back(force[i] * dt * 0.5 + noise[i]);
+        if (step[i] > 10. || step[i] < -10.)
+        {
+            return false;
+        }
     }
     auto forceY = waveFunction.quantumForceMoved(particles, index, step);
 

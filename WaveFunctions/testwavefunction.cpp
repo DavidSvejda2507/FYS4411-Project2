@@ -21,7 +21,7 @@
 #define Force_Ratio
 // #define Force_Ref
 // #define ForceMoved
-#define ForceMoved_Ratio
+// #define ForceMoved_Ratio
 // #define ForceMoved_Ref
 // #define PhiRatio
 // #define PhiRatio_Ref

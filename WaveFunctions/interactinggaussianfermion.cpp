@@ -48,9 +48,10 @@ void InteractingGaussianFermion::testInverse(std::vector<std::unique_ptr<class P
             std::cout << std::setw(10) << std::setprecision(3) << dotProduct(array_vals, j);
         }
         std::cout << "\t\t";
-        std::cout << std::setprecision(3) << m_invMatrixUp[i][0] << '\t';
-        std::cout << std::setprecision(3) << m_invMatrixUp[i][1] << '\t';
-        std::cout << std::setprecision(3) << m_invMatrixUp[i][2] << '\t';
+        for (int j = 0; j < m_n_2; j++)
+        {
+            std::cout << std::setw(10) << std::setprecision(3) << m_invMatrixUp[i][j];
+        }
         std::cout << std::endl;
     }
     std::cout << std::endl;
@@ -62,9 +63,10 @@ void InteractingGaussianFermion::testInverse(std::vector<std::unique_ptr<class P
             std::cout << std::setw(10) << std::setprecision(3) << dotProduct(array_vals, j);
         }
         std::cout << "\t\t";
-        std::cout << std::setprecision(3) << m_invMatrixDown[i - m_n_2][0] << '\t';
-        std::cout << std::setprecision(3) << m_invMatrixDown[i - m_n_2][1] << '\t';
-        std::cout << std::setprecision(3) << m_invMatrixDown[i - m_n_2][2] << '\t';
+        for (int j = 0; j < m_n_2; j++)
+        {
+            std::cout << std::setw(10) << std::setprecision(3) << m_invMatrixDown[i - m_n_2][j];
+        }
         std::cout << std::endl;
     }
     std::cout << std::endl
@@ -76,7 +78,6 @@ void InteractingGaussianFermion::InitialisePositions(std::vector<std::unique_ptr
     m_n = (int)particles.size();
     assert(m_n == 2 || m_n == 6 || m_n == 12 || m_n == 20);
     assert(particles[0]->getNumberOfDimensions() == 2);
-    m_dim = particles[0]->getNumberOfDimensions();
     if (m_n > 2 * N)
         std::cout << "Warning: calculating the determinant is not possible" << std::endl;
     m_n_2 = m_n / 2;
@@ -130,13 +131,74 @@ void InteractingGaussianFermion::InitialisePositions(std::vector<std::unique_ptr
             arrayValsAlpha(pos, m_phi_alpha[i]);
         }
     }
-    // testInverse(particles);
+
+#ifdef Interaction
+    double r2, r, u_p, a;
+    m_distances = std::vector<std::vector<double>>(m_n);
+    m_jPrime = std::vector<std::vector<double>>(m_n);
+    m_jDoublePrime = std::vector<std::vector<double>>(m_n);
+    for (int i = 0; i < m_n; i++)
+    {
+        auto pos = particles[i]->getPosition();
+        auto temp = std::vector<double>(i + 1);
+        auto temp2 = std::vector<double>(i);
+        auto temp3 = std::vector<double>(i);
+        for (int j = 0; j < i; j++)
+        {
+            auto pos2 = particles[j]->getPosition();
+            r2 = 0;
+            for (int k = 0; k < m_dim; k++)
+            {
+                r2 += (pos2[k] - pos[k]) * (pos2[k] - pos[k]);
+            }
+            r = sqrt(r2);
+            a = (i / m_n_2) == (j / m_n_2) ? 3 : 1;
+            temp[j] = r;
+            temp2[j] = jPrime(a, r);
+            temp3[j] = jDoublePrime(a, r);
+        }
+        r2 = 0;
+        r2 += pos[0] * pos[0];
+        r2 += pos[1] * pos[1];
+        temp[i] = r2;
+        m_distances[i] = temp;
+        m_jPrime[i] = temp2;
+        m_jDoublePrime[i] = temp3;
+    }
+    m_interForcesJastrow = std::vector<double>(m_dim * m_n, 0);
+    for (int k = 0; k < m_n; k++)
+    {
+        auto pos = particles[k]->getPosition();
+        for (int i = 0; i < k; i++)
+        {
+            auto pos2 = particles[i]->getPosition();
+            u_p = m_jPrime[k][i];
+            for (int j = 0; j < m_dim; j++)
+            {
+                m_interForcesJastrow[m_dim * k + j] += (pos[j] - pos2[j]) * u_p;
+                m_interForcesJastrow[m_dim * i + j] -= (pos[j] - pos2[j]) * u_p;
+            }
+        }
+    }
+
+    for (int i = 0; i < m_n; i++)
+    {
+        std::cout << std::setw(10) << std::setprecision(3) << m_interForcesJastrow[2 * i];
+        std::cout << std::setw(10) << std::setprecision(3) << m_interForcesJastrow[2 * i + 1];
+        auto force = quantumForceJastrow(particles, i);
+        std::cout << std::setw(10) << std::setprecision(3) << force[0];
+        std::cout << std::setw(10) << std::setprecision(3) << force[1];
+        std::cout << std::setw(10) << std::setprecision(3) << m_interForcesJastrow[2 * i] - force[0];
+        std::cout << std::setw(10) << std::setprecision(3) << m_interForcesJastrow[2 * i + 1] - force[1];
+        std::cout << std::endl;
+    }
+#endif
 }
 
 void InteractingGaussianFermion::adjustPosition(std::vector<std::unique_ptr<class Particle>> &particles, int index, std::vector<double> step)
 {
 
-    std::vector<double> array_vals = std::vector<double>(m_n);
+    std::vector<double> array_vals = std::vector<double>(m_n_2);
     std::vector<double> pos = std::vector<double>(particles[index]->getPosition());
     for (int i = 0; i < m_dim; i++)
     {
@@ -147,6 +209,89 @@ void InteractingGaussianFermion::adjustPosition(std::vector<std::unique_ptr<clas
     arrayValsPrime(pos, m_phi_prime[index]);
     arrayValsPrimePrime(pos, m_phi_primePrime[index]);
     if (m_grad_optimisation) arrayValsAlpha(pos, m_phi_alpha[index]);
+
+#ifdef Interaction
+    // Jastrow
+    double r2, u_p, r, a;
+    std::vector<double> pos_old = particles[index]->getPosition();
+    pos = std::vector<double>(pos_old);
+    for (int j = 0; j < m_dim; j++)
+    {
+        m_interForcesJastrow[m_dim * index + j] = 0;
+        pos[j] += step[j];
+    }
+
+    for (int j = 0; j < index; j++)
+    { // Row
+        std::vector<double> pos2 = particles[j]->getPosition();
+        u_p = m_jPrime[index][j];
+        std::cout << u_p << std::endl;
+        for (int k = 0; k < m_dim; k++)
+            m_interForcesJastrow[m_dim * j + k] -= (pos2[k] - pos_old[k]) * u_p;
+        std::cout << std::setw(10) << std::setprecision(3) << m_interForcesJastrow[2 * j];
+        std::cout << std::setw(10) << std::setprecision(3) << m_interForcesJastrow[2 * j + 1];
+        r2 = 0;
+        for (int k = 0; k < m_dim; k++)
+        {
+            r2 += (pos2[k] - pos[k]) * (pos2[k] - pos[k]);
+        }
+        r = sqrt(r2);
+        m_distances[index][j] = r;
+        a = (index / m_n_2) == (j / m_n_2) ? 3 : 1;
+        u_p = jPrime(a, r);
+        std::cout << u_p << std::endl;
+        m_jPrime[index][j] = u_p;
+        m_jDoublePrime[index][j] = jDoublePrime(a, r);
+        for (int k = 0; k < m_dim; k++)
+        {
+            m_interForcesJastrow[m_dim * j + k] += (pos2[k] - pos[k]) * u_p;
+            m_interForcesJastrow[m_dim * index + k] += (pos[k] - pos2[k]) * u_p;
+        }
+    }
+    r2 = 0;
+    r2 += pos[0] * pos[0];
+    r2 += pos[1] * pos[1];
+    m_distances[index][index] = r2;
+    for (int j = index + 1; j < m_n; j++)
+    { // Column
+        std::vector<double> pos2 = particles[j]->getPosition();
+        u_p = m_jPrime[j][index];
+        std::cout << u_p << std::endl;
+        for (int k = 0; k < m_dim; k++)
+            m_interForcesJastrow[m_dim * j + k] -= (pos2[k] - pos_old[k]) * u_p;
+        std::cout << std::setw(10) << std::setprecision(3) << m_interForcesJastrow[2 * j];
+        std::cout << std::setw(10) << std::setprecision(3) << m_interForcesJastrow[2 * j + 1];
+        r2 = 0;
+        for (int k = 0; k < m_dim; k++)
+        {
+            r2 += (pos2[k] - pos[k]) * (pos2[k] - pos[k]);
+        }
+        r = sqrt(r2);
+        m_distances[j][index] = r;
+        a = (index / m_n_2) == (j / m_n_2) ? 3 : 1;
+        u_p = jPrime(a, r);
+        std::cout << u_p << std::endl;
+        m_jPrime[j][index] = u_p;
+        m_jDoublePrime[j][index] = jDoublePrime(a, r);
+        for (int k = 0; k < m_dim; k++)
+        {
+            m_interForcesJastrow[m_dim * j + k] += (pos2[k] - pos[k]) * u_p;
+            m_interForcesJastrow[m_dim * index + k] += (pos[k] - pos2[k]) * u_p;
+        }
+    }
+
+    for (int i = 0; i < m_n; i++)
+    {
+        std::cout << std::setw(10) << std::setprecision(3) << m_interForcesJastrow[2 * i];
+        std::cout << std::setw(10) << std::setprecision(3) << m_interForcesJastrow[2 * i + 1];
+        auto force = quantumForceJastrow(particles, i);
+        std::cout << std::setw(10) << std::setprecision(3) << force[0];
+        std::cout << std::setw(10) << std::setprecision(3) << force[1];
+        std::cout << std::setw(10) << std::setprecision(3) << m_interForcesJastrow[2 * i] - force[0];
+        std::cout << std::setw(10) << std::setprecision(3) << m_interForcesJastrow[2 * i + 1] - force[1];
+        std::cout << std::endl;
+    }
+#endif
 }
 
 double InteractingGaussianFermion::evalPhi(int i, std::vector<double> const &pos, double phi0)
@@ -230,7 +375,6 @@ double InteractingGaussianFermion::hermitePrimePrime(int i, double pos)
     case 0:
         return (4 * rho2 * pos2 - 2) * rho2;
     case 1:
-        // std::cout << hermite(i, pos) << "\t" << 2 * pos << std::endl;
         return (-12 + 8 * rho2 * pos2) * rho2 * rho * pos;
     case 2:
         return ((16 * rho2 * pos2 - 48) * rho2 * pos2 + 4) * rho2;
@@ -369,23 +513,21 @@ void InteractingGaussianFermion::updateInverseMatrix(int index, std::vector<doub
     }
 }
 
-double InteractingGaussianFermion::jPrime(double r)
+double InteractingGaussianFermion::jPrime(double a, double r)
 {
     // *************** 1/(rij*(1+beta*rij)^2) ***************
-    double beta = m_parameters[1], betaTerm, betaTerm2;
+    double beta = m_parameters[1], betaTerm;
     betaTerm = 1 + beta * r;
-    betaTerm2 = betaTerm * betaTerm;
-    return 1 / (r * betaTerm2);
+    return 1 / (a * r * betaTerm * betaTerm);
 }
 
 double InteractingGaussianFermion::jDoublePrime(double a, double r)
 {
     // *************** Second derivative  ***************
-    double beta = m_parameters[1], betaTerm, betaTerm2, betaTerm4;
+    double beta = m_parameters[1], betaTerm;
     betaTerm = 1 + beta * r;
-    betaTerm2 = betaTerm * betaTerm;
-    betaTerm4 = betaTerm2 * betaTerm2;
-    return (a * a * r + a * (1 - 1 * beta * r) * betaTerm) / (betaTerm4 * r);
+    return (1 - beta * r) / (a * r * betaTerm * betaTerm * betaTerm);
+    ;
 }
 
 double InteractingGaussianFermion::evaluate(std::vector<std::unique_ptr<class Particle>> &particles)
@@ -425,7 +567,7 @@ double InteractingGaussianFermion::evaluate(std::vector<std::unique_ptr<class Pa
 
             r2 = (pos1[0] - pos2[0]) * (pos1[0] - pos2[0]) + (pos1[1] - pos2[1]) * (pos1[1] - pos2[1]);
             r = sqrt(r2);
-            a = (i % m_n_2) == (j % m_n_2) ? 3 : 1; // We divide by 1/a instead of multiplying by a, because 3 is easier to use than 1/3
+            a = (i / m_n_2) == (j / m_n_2) ? 3 : 1; // We divide by 1/a instead of multiplying by a, because 3 is easier to use than 1/3
             phi *= exp(r / (a * (1 + beta * r)));
         }
     }
@@ -436,7 +578,6 @@ double InteractingGaussianFermion::evaluate(std::vector<std::unique_ptr<class Pa
 double InteractingGaussianFermion::computeDoubleDerivative(std::vector<std::unique_ptr<class Particle>> &particles)
 {
     //***************WE RETURN d2/dx2(phi)/phi NOT d2/dx2(phi)*********************
-
     // Non-interacting part
     double nabla2 = 0;
     for (int i = 0; i < m_n; i++)
@@ -455,21 +596,11 @@ double InteractingGaussianFermion::computeDoubleDerivative(std::vector<std::uniq
         }
     }
 
-    std::vector<double> pos1, pos2;
-    double r2, r, br1, a, beta = m_parameters[1];
     for (int i = 0; i < m_n; i++)
     {
-        pos1 = particles[i]->getPosition();
         for (int j = 0; j < i; j++)
         {
-            pos2 = particles[j]->getPosition();
-
-            r2 = (pos1[0] - pos2[0]) * (pos1[0] - pos2[0]) + (pos1[1] - pos2[1]) * (pos1[1] - pos2[1]);
-            r = sqrt(r2);
-            br1 = beta * r + 1;
-            a = (i % m_n_2) == (j % m_n_2) ? 3 : 1; // We divide by 1/a instead of multiplying by a, because 3 is easier to use than 1/3
-            // We assume that the number of dimensions = 2
-            nabla2 += 2 * (1 - beta * r) / (a * r * br1 * br1 * br1);
+            nabla2 += m_dim * m_jDoublePrime[i][j];
         }
     }
 #endif
@@ -492,7 +623,7 @@ std::vector<double> InteractingGaussianFermion::quantumForceJastrow(std::vector<
     {
         if (i == index) continue;
         pos1 = particles[i]->getPosition();
-        a = (i % m_n_2) == (index % m_n_2) ? 3 : 1; // We divide by 1/a instead of multiplying by a, because 3 is easier to use than 1/3
+        a = (i / m_n_2) == (index / m_n_2) ? 3 : 1; // We divide by 1/a instead of multiplying by a, because 3 is easier to use than 1/3
         r2 = (pos[0] - pos1[0]) * (pos[0] - pos1[0]) + (pos[1] - pos1[1]) * (pos[1] - pos1[1]);
         r = sqrt(r2);
         br1 = beta * r + 1;
@@ -542,7 +673,7 @@ std::vector<double> InteractingGaussianFermion::quantumForceMoved(std::vector<st
     {
         if (i == index) continue;
         pos1 = particles[i]->getPosition();
-        a = (i % m_n_2) == (index % m_n_2) ? 3 : 1; // We divide by 1/a instead of multiplying by a, because 3 is easier to use than 1/3
+        a = (i / m_n_2) == (index / m_n_2) ? 3 : 1; // We divide by 1/a instead of multiplying by a, because 3 is easier to use than 1/3
         r2 = (pos[0] - pos1[0]) * (pos[0] - pos1[0]) + (pos[1] - pos1[1]) * (pos[1] - pos1[1]);
         r = sqrt(r2);
         br1 = beta * r + 1;
@@ -572,7 +703,7 @@ double InteractingGaussianFermion::phiRatio(std::vector<std::unique_ptr<class Pa
     {
         if (i == index) continue;
         pos1 = particles[i]->getPosition();
-        a = (i % m_n_2) == (index % m_n_2) ? 3 : 1; // We divide by 1/a instead of multiplying by a, because 3 is easier to use than 1/3
+        a = (i / m_n_2) == (index / m_n_2) ? 3 : 1; // We divide by 1/a instead of multiplying by a, because 3 is easier to use than 1/3
         r2 = (pos[0] - pos1[0]) * (pos[0] - pos1[0]) + (pos[1] - pos1[1]) * (pos[1] - pos1[1]);
         r = sqrt(r2);
         r2 = (pos_new[0] - pos1[0]) * (pos_new[0] - pos1[0]) + (pos_new[1] - pos1[1]) * (pos_new[1] - pos1[1]);
@@ -648,7 +779,7 @@ std::vector<double> InteractingGaussianFermion::getdPhi_dParams(std::vector<std:
             r2 = (pos1[0] - pos2[0]) * (pos1[0] - pos2[0]) + (pos1[1] - pos2[1]) * (pos1[1] - pos2[1]);
             r = sqrt(r2);
             br1 = beta * r + 1;
-            a = (i % m_n_2) == (j % m_n_2) ? 3 : 1; // We divide by 1/a instead of multiplying by a, because 3 is easier to use than 1/3
+            a = (i / m_n_2) == (j / m_n_2) ? 3 : 1; // We divide by 1/a instead of multiplying by a, because 3 is easier to use than 1/3
             // We assume that the number of dimensions = 2
             ddBeta -= r2 / (a * br1 * br1);
         }

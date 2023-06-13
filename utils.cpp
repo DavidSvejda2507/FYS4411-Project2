@@ -17,11 +17,10 @@
 #include "omp.h"
 #include "particle.h"
 #include "system.h"
+#include "toggles.h"
 #include <memory>
 #include <nlopt.hpp>
 #include <vector>
-
-// #define Testing
 
 std::seed_seq seq{std::random_device{}()};
 

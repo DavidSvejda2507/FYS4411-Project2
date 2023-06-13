@@ -11,6 +11,8 @@
 #include "particle.h"
 #include "system.h"
 
+#include "toggles.h"
+
 void testEquilibration(std::vector<std::unique_ptr<Particle>> &particles, double alpha);
 
 System::System(
@@ -28,6 +30,13 @@ System::System(
     m_solver = std::move(solver);
     m_particles = std::move(particles);
     m_waveFunction->InitialisePositions(m_particles);
+#ifdef CoulombOptimisation
+    // I'm tryint to pass a pointer from the wavefunction to the hamiltonian,
+    // but it seems like whatever I do VS code complains
+    // As it is it compiles without issues from gcc
+    std::vector<std::vector<double>> *temp = m_waveFunction->getDistances();
+    m_hamiltonian->setDistances(temp);
+#endif
     m_calculateGradient = calculateGradient;
 }
 

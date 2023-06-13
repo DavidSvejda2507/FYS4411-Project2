@@ -12,10 +12,8 @@
 #include "interactinggaussianfermion.h"
 #include "wavefunction.h"
 
+#include "toggles.h"
 #include <iostream>
-#define Interaction
-// #define TestDDalpha
-// #define TestDDbeta
 
 InteractingGaussianFermion::InteractingGaussianFermion(double alpha, double beta, double omega, bool grad_optimisation)
 {
@@ -153,7 +151,7 @@ void InteractingGaussianFermion::InitialisePositions(std::vector<std::unique_ptr
             }
             r = sqrt(r2);
             a = (i / m_n_2) == (j / m_n_2) ? 3 : 1;
-            temp[j] = r;
+            temp[j] = 1 / r;
             temp2[j] = jPrime(a, r);
             temp3[j] = jDoublePrime(a, r);
         }
@@ -182,6 +180,13 @@ void InteractingGaussianFermion::InitialisePositions(std::vector<std::unique_ptr
     }
 #endif
 }
+
+#ifdef CoulombOptimisation
+std::vector<std::vector<double>> *InteractingGaussianFermion::getDistances()
+{
+    return &m_distances;
+}
+#endif
 
 void InteractingGaussianFermion::adjustPosition(std::vector<std::unique_ptr<class Particle>> &particles, int index, std::vector<double> step)
 {
@@ -221,7 +226,7 @@ void InteractingGaussianFermion::adjustPosition(std::vector<std::unique_ptr<clas
             r2 += (pos2[k] - pos[k]) * (pos2[k] - pos[k]);
         }
         r = sqrt(r2);
-        m_distances[index][j] = r;
+        m_distances[index][j] = 1 / r;
         a = (index / m_n_2) == (j / m_n_2) ? 3 : 1;
         u_p = jPrime(a, r);
         m_jPrime[index][j] = u_p;
@@ -248,7 +253,7 @@ void InteractingGaussianFermion::adjustPosition(std::vector<std::unique_ptr<clas
             r2 += (pos2[k] - pos[k]) * (pos2[k] - pos[k]);
         }
         r = sqrt(r2);
-        m_distances[j][index] = r;
+        m_distances[j][index] = 1 / r;
         a = (index / m_n_2) == (j / m_n_2) ? 3 : 1;
         u_p = jPrime(a, r);
         m_jPrime[j][index] = u_p;

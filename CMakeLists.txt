@@ -21,9 +21,9 @@ find_package(NLopt REQUIRED)
 
 # Add all compiler warnings. Remember, a warning in C++ can very often lead to a bug
 # later on so _fix your warnings!_
-set(CMAKE_CXX_FLAGS "-Wall -Wextra -fopenmp")
+set(CMAKE_CXX_FLAGS "-Wall -Wextra -fopenmp -pg")
 # Add debugging flag for tools such as gdb and valgrind.
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -g")
 # Add full compiler optimization when in the release build type. Other options include
 # -O0, -O1, -O2.
 #set(CMAKE_CXX_FLAGS_RELEASE "-O0 -fopt-info")

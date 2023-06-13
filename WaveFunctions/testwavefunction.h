@@ -19,8 +19,8 @@ public:
     double phiRatio(std::vector<std::unique_ptr<class Particle>> &particles, int index, std::vector<double> &step);
     std::vector<double> getdPhi_dParams(std::vector<std::unique_ptr<class Particle>> &particles);
 
-    virtual int getNumberOfParameters() { return m_wavefunc->getNumberOfParameters(); }
-    virtual const std::vector<double> &getParameters() { return m_wavefunc->getParameters(); }
+    int getNumberOfParameters() { return m_wavefunc->getNumberOfParameters(); }
+    const std::vector<double> &getParameters() { return m_wavefunc->getParameters(); }
 
 private:
     std::unique_ptr<class WaveFunction> m_wavefunc;

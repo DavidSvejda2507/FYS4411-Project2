@@ -4,6 +4,8 @@
 
 #include "wavefunction.h"
 
+#include "toggles.h"
+
 class InteractingGaussianFermion : public WaveFunction
 {
 public:
@@ -18,6 +20,10 @@ public:
     std::vector<double> quantumForceMoved(std::vector<std::unique_ptr<class Particle>> &particles, int index, std::vector<double> &step);
     double phiRatio(std::vector<std::unique_ptr<class Particle>> &particles, int index, std::vector<double> &step);
     std::vector<double> getdPhi_dParams(std::vector<std::unique_ptr<class Particle>> &particles);
+
+#ifdef CoulombOptimisation
+    std::vector<std::vector<double>> *getDistances();
+#endif
 
 private:
     int m_n, m_n_2;

@@ -2,6 +2,8 @@
 #include <memory>
 #include <vector>
 
+#include "toggles.h"
+
 class WaveFunction
 {
 public:
@@ -18,6 +20,9 @@ public:
     virtual std::vector<double> quantumForceMoved(std::vector<std::unique_ptr<class Particle>> &particles, int index, std::vector<double> &step) = 0;
     virtual double phiRatio(std::vector<std::unique_ptr<class Particle>> &particles, int index, std::vector<double> &step) = 0;
     virtual std::vector<double> getdPhi_dParams(std::vector<std::unique_ptr<class Particle>> &particles) = 0;
+#ifdef CoulombOptimisation
+    virtual std::vector<std::vector<double>> *getDistances() = 0;
+#endif
 
 protected:
     int m_numberOfParameters = 0;

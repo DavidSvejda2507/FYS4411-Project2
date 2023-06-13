@@ -180,18 +180,6 @@ void InteractingGaussianFermion::InitialisePositions(std::vector<std::unique_ptr
             }
         }
     }
-
-    for (int i = 0; i < m_n; i++)
-    {
-        std::cout << std::setw(10) << std::setprecision(3) << m_interForcesJastrow[2 * i];
-        std::cout << std::setw(10) << std::setprecision(3) << m_interForcesJastrow[2 * i + 1];
-        auto force = quantumForceJastrow(particles, i);
-        std::cout << std::setw(10) << std::setprecision(3) << force[0];
-        std::cout << std::setw(10) << std::setprecision(3) << force[1];
-        std::cout << std::setw(10) << std::setprecision(3) << m_interForcesJastrow[2 * i] - force[0];
-        std::cout << std::setw(10) << std::setprecision(3) << m_interForcesJastrow[2 * i + 1] - force[1];
-        std::cout << std::endl;
-    }
 #endif
 }
 
@@ -225,11 +213,8 @@ void InteractingGaussianFermion::adjustPosition(std::vector<std::unique_ptr<clas
     { // Row
         std::vector<double> pos2 = particles[j]->getPosition();
         u_p = m_jPrime[index][j];
-        std::cout << u_p << std::endl;
         for (int k = 0; k < m_dim; k++)
             m_interForcesJastrow[m_dim * j + k] -= (pos2[k] - pos_old[k]) * u_p;
-        std::cout << std::setw(10) << std::setprecision(3) << m_interForcesJastrow[2 * j];
-        std::cout << std::setw(10) << std::setprecision(3) << m_interForcesJastrow[2 * j + 1];
         r2 = 0;
         for (int k = 0; k < m_dim; k++)
         {
@@ -239,7 +224,6 @@ void InteractingGaussianFermion::adjustPosition(std::vector<std::unique_ptr<clas
         m_distances[index][j] = r;
         a = (index / m_n_2) == (j / m_n_2) ? 3 : 1;
         u_p = jPrime(a, r);
-        std::cout << u_p << std::endl;
         m_jPrime[index][j] = u_p;
         m_jDoublePrime[index][j] = jDoublePrime(a, r);
         for (int k = 0; k < m_dim; k++)
@@ -256,11 +240,8 @@ void InteractingGaussianFermion::adjustPosition(std::vector<std::unique_ptr<clas
     { // Column
         std::vector<double> pos2 = particles[j]->getPosition();
         u_p = m_jPrime[j][index];
-        std::cout << u_p << std::endl;
         for (int k = 0; k < m_dim; k++)
             m_interForcesJastrow[m_dim * j + k] -= (pos2[k] - pos_old[k]) * u_p;
-        std::cout << std::setw(10) << std::setprecision(3) << m_interForcesJastrow[2 * j];
-        std::cout << std::setw(10) << std::setprecision(3) << m_interForcesJastrow[2 * j + 1];
         r2 = 0;
         for (int k = 0; k < m_dim; k++)
         {
@@ -270,7 +251,6 @@ void InteractingGaussianFermion::adjustPosition(std::vector<std::unique_ptr<clas
         m_distances[j][index] = r;
         a = (index / m_n_2) == (j / m_n_2) ? 3 : 1;
         u_p = jPrime(a, r);
-        std::cout << u_p << std::endl;
         m_jPrime[j][index] = u_p;
         m_jDoublePrime[j][index] = jDoublePrime(a, r);
         for (int k = 0; k < m_dim; k++)
@@ -278,18 +258,6 @@ void InteractingGaussianFermion::adjustPosition(std::vector<std::unique_ptr<clas
             m_interForcesJastrow[m_dim * j + k] += (pos2[k] - pos[k]) * u_p;
             m_interForcesJastrow[m_dim * index + k] += (pos[k] - pos2[k]) * u_p;
         }
-    }
-
-    for (int i = 0; i < m_n; i++)
-    {
-        std::cout << std::setw(10) << std::setprecision(3) << m_interForcesJastrow[2 * i];
-        std::cout << std::setw(10) << std::setprecision(3) << m_interForcesJastrow[2 * i + 1];
-        auto force = quantumForceJastrow(particles, i);
-        std::cout << std::setw(10) << std::setprecision(3) << force[0];
-        std::cout << std::setw(10) << std::setprecision(3) << force[1];
-        std::cout << std::setw(10) << std::setprecision(3) << m_interForcesJastrow[2 * i] - force[0];
-        std::cout << std::setw(10) << std::setprecision(3) << m_interForcesJastrow[2 * i + 1] - force[1];
-        std::cout << std::endl;
     }
 #endif
 }
@@ -613,24 +581,9 @@ std::vector<double> InteractingGaussianFermion::quantumForceSlater(int index)
     return vectorDotProduct(m_phi_prime[index], index);
 }
 
-std::vector<double> InteractingGaussianFermion::quantumForceJastrow(std::vector<std::unique_ptr<class Particle>> &particles, int index)
+std::vector<double> InteractingGaussianFermion::quantumForceJastrow(std::vector<std::unique_ptr<class Particle>> &, int index)
 {
-    double a, r2, r, br1, beta = m_parameters[1];
-    std::vector<double> pos, pos1, force;
-    pos = particles[index]->getPosition();
-    force = std::vector<double>(2, 0);
-    for (int i = 0; i < m_n; i++)
-    {
-        if (i == index) continue;
-        pos1 = particles[i]->getPosition();
-        a = (i / m_n_2) == (index / m_n_2) ? 3 : 1; // We divide by 1/a instead of multiplying by a, because 3 is easier to use than 1/3
-        r2 = (pos[0] - pos1[0]) * (pos[0] - pos1[0]) + (pos[1] - pos1[1]) * (pos[1] - pos1[1]);
-        r = sqrt(r2);
-        br1 = beta * r + 1;
-        force[0] += (pos[0] - pos1[0]) / (a * r * br1 * br1);
-        force[1] += (pos[1] - pos1[1]) / (a * r * br1 * br1);
-    }
-    return force;
+    return std::vector<double>{m_interForcesJastrow[m_dim * index], m_interForcesJastrow[m_dim * index + 1]};
 }
 
 std::vector<double> InteractingGaussianFermion::quantumForce(std::vector<std::unique_ptr<class Particle>> &particles, int index)
@@ -667,7 +620,7 @@ std::vector<double> InteractingGaussianFermion::quantumForceMoved(std::vector<st
     force[1] /= det_ratio;
 
 #ifdef Interaction
-    double a, r2, r, br1, beta = m_parameters[1];
+    double a, r2, r, j_p;
     std::vector<double> pos1;
     for (int i = 0; i < m_n; i++)
     {
@@ -676,9 +629,9 @@ std::vector<double> InteractingGaussianFermion::quantumForceMoved(std::vector<st
         a = (i / m_n_2) == (index / m_n_2) ? 3 : 1; // We divide by 1/a instead of multiplying by a, because 3 is easier to use than 1/3
         r2 = (pos[0] - pos1[0]) * (pos[0] - pos1[0]) + (pos[1] - pos1[1]) * (pos[1] - pos1[1]);
         r = sqrt(r2);
-        br1 = beta * r + 1;
-        force[0] += (pos[0] - pos1[0]) / (a * r * br1 * br1);
-        force[1] += (pos[1] - pos1[1]) / (a * r * br1 * br1);
+        j_p = jPrime(a, r);
+        force[0] += (pos[0] - pos1[0]) * j_p;
+        force[1] += (pos[1] - pos1[1]) * j_p;
     }
 #endif
 

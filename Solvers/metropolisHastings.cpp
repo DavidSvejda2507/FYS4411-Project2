@@ -9,13 +9,6 @@
 #include "particle.h"
 
 #include <iostream>
-using std::cout;
-using std::endl;
-
-void testGradient(class WaveFunction &WaveFunction,
-                  std::vector<std::unique_ptr<class Particle>> &particles,
-                  std::vector<double> force,
-                  int index);
 
 MetropolisHastings::MetropolisHastings(std::unique_ptr<class Random> rng)
     : MonteCarlo(std::move(rng))

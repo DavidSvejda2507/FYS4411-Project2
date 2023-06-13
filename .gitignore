@@ -43,3 +43,8 @@ vmc
 
 # Ignore python cache
 __pycache__
+
+# Ignore input and ouitput files
+Input
+Outputs
+*.pdf

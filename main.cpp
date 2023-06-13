@@ -13,7 +13,7 @@ m = 1
 omega = 1
 */
 
-#define TIMEING // Comment out turn off timing
+#include "toggles.h"
 
 int main(int argc, char *argv[])
 {

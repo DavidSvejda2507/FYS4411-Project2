@@ -87,18 +87,22 @@ void Sampler::sample(bool acceptedStep, System *system)
 {
     /*sample all the interesting things
      */
-    double localEnergy = system->computeLocalEnergy();
-    m_cumulativeEnergy += localEnergy;
-    m_cumulativeEnergy2 += localEnergy * localEnergy;
+    if (acceptedStep || !m_initialised)
+    {
+        m_localEnergy = system->computeLocalEnergy();
+        // sample quantities for gradient computation
+        m_currentDerivatives = system->getdPhi_dParams();
+        m_initialised = true;
+    }
 
-    // sample quantities for gradient computation
-    std::vector<double> currentDerivatives = system->getdPhi_dParams();
+    m_cumulativeEnergy += m_localEnergy;
+    m_cumulativeEnergy2 += m_localEnergy * m_localEnergy;
 
     // update each of the rowas adding current sampled quantity
-    for (unsigned int i = 0; i < currentDerivatives.size(); i++)
+    for (unsigned int i = 0; i < m_currentDerivatives.size(); i++)
     {
-        m_cumulativeGradientTerms[i][0] += currentDerivatives[i];
-        m_cumulativeGradientTerms[i][1] += currentDerivatives[i] * localEnergy;
+        m_cumulativeGradientTerms[i][0] += m_currentDerivatives[i];
+        m_cumulativeGradientTerms[i][1] += m_currentDerivatives[i] * m_localEnergy;
     }
     m_stepNumber++;
     m_numberOfAcceptedSteps += acceptedStep;

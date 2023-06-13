@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD 14)
 #
 # if not, set Debug as the default build type.
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Debug)
+  set(CMAKE_BUILD_TYPE Release)
 endif()
 
 #check if openMP and NLopt are present:
@@ -24,7 +24,7 @@ find_package(NLopt REQUIRED)
 # set(CMAKE_CXX_FLAGS "-Wall -Wextra -fopenmp -pg") # For profiling add -pg here
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -fopenmp")
 # Add debugging flag for tools such as gdb and valgrind.
-set(CMAKE_CXX_FLAGS_DEBUG "-g -g")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
 # Add full compiler optimization when in the release build type. Other options include
 # -O0, -O1, -O2.
 #set(CMAKE_CXX_FLAGS_RELEASE "-O0 -fopt-info")

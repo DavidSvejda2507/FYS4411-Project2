@@ -1,6 +1,9 @@
 // --------------------UTILS--------------------
 // #define Testing // Toggles using the testwavefunction as a wrapper of the wavefunction
 
+// --------------------MAIN--------------------
+// #define TIMEING
+
 // --------------------TEST WAVEFUNCTION--------------------
 // #define Nabla2
 #define Nabla2_Ratio

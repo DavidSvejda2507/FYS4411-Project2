@@ -49,8 +49,13 @@ protected:
     double m_cumulativeEnergy = 0;
     double m_energy2 = 0;
     double m_cumulativeEnergy2 = 0;
+
+    bool m_initialised = false;
+    double m_localEnergy;
+    std::vector<double> m_currentDerivatives;
     // sampled cumulative quantities for computing gradient.
-    std::vector<std::vector<double>> m_cumulativeGradientTerms;
+    std::vector<std::vector<double>>
+        m_cumulativeGradientTerms;
     // averaged quantities to compute gradient
     std::vector<std::vector<double>> m_gradientTerms;
     // compute the gradient of the trial energy wrt variational parameters

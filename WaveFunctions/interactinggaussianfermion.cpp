@@ -135,12 +135,14 @@ void InteractingGaussianFermion::InitialisePositions(std::vector<std::unique_ptr
     m_distances = std::vector<std::vector<double>>(m_n);
     m_jPrime = std::vector<std::vector<double>>(m_n);
     m_jDoublePrime = std::vector<std::vector<double>>(m_n);
+    m_jBeta = std::vector<std::vector<double>>(m_n);
     for (int i = 0; i < m_n; i++)
     {
         auto pos = particles[i]->getPosition();
         auto temp = std::vector<double>(i + 1);
         auto temp2 = std::vector<double>(i);
         auto temp3 = std::vector<double>(i);
+        auto temp4 = std::vector<double>(i);
         for (int j = 0; j < i; j++)
         {
             auto pos2 = particles[j]->getPosition();
@@ -154,6 +156,7 @@ void InteractingGaussianFermion::InitialisePositions(std::vector<std::unique_ptr
             temp[j] = 1 / r;
             temp2[j] = jPrime(a, r);
             temp3[j] = jDoublePrime(a, r);
+            temp4[j] = jBeta(a, r);
         }
         r2 = 0;
         r2 += pos[0] * pos[0];
@@ -162,6 +165,7 @@ void InteractingGaussianFermion::InitialisePositions(std::vector<std::unique_ptr
         m_distances[i] = temp;
         m_jPrime[i] = temp2;
         m_jDoublePrime[i] = temp3;
+        m_jBeta[i] = temp4;
     }
     m_interForcesJastrow = std::vector<double>(m_dim * m_n, 0);
     for (int k = 0; k < m_n; k++)
@@ -231,6 +235,7 @@ void InteractingGaussianFermion::adjustPosition(std::vector<std::unique_ptr<clas
         u_p = jPrime(a, r);
         m_jPrime[index][j] = u_p;
         m_jDoublePrime[index][j] = jDoublePrime(a, r);
+        m_jBeta[index][j] = jBeta(a, r);
         for (int k = 0; k < m_dim; k++)
         {
             m_interForcesJastrow[m_dim * j + k] += (pos2[k] - pos[k]) * u_p;
@@ -258,6 +263,7 @@ void InteractingGaussianFermion::adjustPosition(std::vector<std::unique_ptr<clas
         u_p = jPrime(a, r);
         m_jPrime[j][index] = u_p;
         m_jDoublePrime[j][index] = jDoublePrime(a, r);
+        m_jBeta[j][index] = jBeta(a, r);
         for (int k = 0; k < m_dim; k++)
         {
             m_interForcesJastrow[m_dim * j + k] += (pos2[k] - pos[k]) * u_p;
@@ -500,7 +506,14 @@ double InteractingGaussianFermion::jDoublePrime(double a, double r)
     double beta = m_parameters[1], betaTerm;
     betaTerm = 1 + beta * r;
     return (1 - beta * r) / (a * r * betaTerm * betaTerm * betaTerm);
-    ;
+}
+
+double InteractingGaussianFermion::jBeta(double a, double r)
+{
+    // *************** Beta derivative  ***************
+    double beta = m_parameters[1], betaTerm;
+    betaTerm = 1 + beta * r;
+    return r * r / (a * betaTerm * betaTerm);
 }
 
 double InteractingGaussianFermion::evaluate(std::vector<std::unique_ptr<class Particle>> &particles)
@@ -725,21 +738,11 @@ std::vector<double> InteractingGaussianFermion::getdPhi_dParams(std::vector<std:
 
 #endif
 #ifdef Interaction
-    std::vector<double> pos1, pos2;
-    double r2, r, br1, a, beta = m_parameters[1];
     for (int i = 0; i < m_n; i++)
     {
-        pos1 = particles[i]->getPosition();
         for (int j = 0; j < i; j++)
         {
-            pos2 = particles[j]->getPosition();
-
-            r2 = (pos1[0] - pos2[0]) * (pos1[0] - pos2[0]) + (pos1[1] - pos2[1]) * (pos1[1] - pos2[1]);
-            r = sqrt(r2);
-            br1 = beta * r + 1;
-            a = (i / m_n_2) == (j / m_n_2) ? 3 : 1; // We divide by 1/a instead of multiplying by a, because 3 is easier to use than 1/3
-            // We assume that the number of dimensions = 2
-            ddBeta -= r2 / (a * br1 * br1);
+            ddBeta -= m_jBeta[i][j];
         }
     }
 #ifdef TestDDbeta
@@ -748,7 +751,7 @@ std::vector<double> InteractingGaussianFermion::getdPhi_dParams(std::vector<std:
 #else
     double phi, phi_plus, phi_minus, grad = 0;
 #endif
-    const double dbeta = 1e-5, dbeta2 = 2 * dbeta;
+    const double dbeta = 1e-5, dbeta2 = 2 * dbeta, beta = m_parameters[1];
     phi = evaluate(particles);
     m_parameters[1] = beta + dbeta;
     phi_plus = evaluate(particles);

@@ -40,6 +40,7 @@ private:
     std::vector<std::vector<double>> m_distances;
     std::vector<std::vector<double>> m_jPrime;
     std::vector<std::vector<double>> m_jDoublePrime;
+    std::vector<std::vector<double>> m_jBeta;
     std::vector<double> m_interForcesJastrow;
 
     // std::vector<std::vector<double>> m_distances;
@@ -65,4 +66,5 @@ private:
     void changeAlpha(std::vector<std::unique_ptr<class Particle>> &particles);
     double jPrime(double a, double r);
     double jDoublePrime(double a, double r);
+    double jBeta(double a, double r);
 };

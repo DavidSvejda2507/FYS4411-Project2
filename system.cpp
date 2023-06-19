@@ -6,6 +6,7 @@
 #include "InitialStates/initialstate.h"
 #include "Samplers/sampler.h"
 #include "Samplers/samplerFineTune.h"
+#include "Samplers/samplerFineTune2D.h"
 #include "Solvers/montecarlo.h"
 #include "WaveFunctions/wavefunction.h"
 #include "particle.h"
@@ -31,9 +32,6 @@ System::System(
     m_particles = std::move(particles);
     m_waveFunction->InitialisePositions(m_particles);
 #ifdef CoulombOptimisation
-    // I'm tryint to pass a pointer from the wavefunction to the hamiltonian,
-    // but it seems like whatever I do VS code complains
-    // As it is it compiles without issues from gcc
     std::vector<std::vector<double>> *temp = m_waveFunction->getDistances();
     m_hamiltonian->setDistances(temp);
 #endif
@@ -54,10 +52,27 @@ std::unique_ptr<class Sampler> System::runEquilibrationSteps(
     }
     else
     {
-        sampler = std::make_unique<SamplerFineTune>(
-            m_numberOfParticles,
-            m_numberOfDimensions,
-            0);
+        if (m_numberOfDimensions == 3)
+        {
+            sampler = std::make_unique<SamplerFineTune>(
+                m_numberOfParticles,
+                m_numberOfDimensions,
+                0,
+                m_hamiltonian->getScale());
+        }
+        else
+        {
+            if (m_numberOfDimensions == 2)
+            {
+                sampler = std::make_unique<SamplerFineTune2D>(
+                    m_numberOfParticles,
+                    m_numberOfDimensions,
+                    0,
+                    m_hamiltonian->getScale());
+            }
+            else
+                assert(m_numberOfDimensions == 2 || m_numberOfDimensions == 3);
+        }
     }
 
     for (unsigned int i = 0; i < numberOfEquilibrationSteps; i++)

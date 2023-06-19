@@ -1,4 +1,4 @@
-#include "samplerFineTune.h"
+#include "samplerFineTune2D.h"
 #include "Hamiltonians/hamiltonian.h"
 #include "WaveFunctions/wavefunction.h"
 #include "particle.h"
@@ -15,27 +15,23 @@
 using std::cout;
 using std::endl;
 
-SamplerFineTune::SamplerFineTune(unsigned int numberOfParticles,
-                                 unsigned int numberOfDimensions,
-                                 int,
-                                 double scale) : Sampler::Sampler(numberOfParticles, numberOfDimensions, 0)
+SamplerFineTune2D::SamplerFineTune2D(unsigned int numberOfParticles,
+                                     unsigned int numberOfDimensions,
+                                     int,
+                                     double scale) : Sampler::Sampler(numberOfParticles, numberOfDimensions, 0)
 {
     int thread_number = omp_get_thread_num();
     std::string fname_thread = "./Outputs/sampledEnergies_" + std::to_string(numberOfParticles) + "_" + std::to_string(thread_number) + ".bin";
     m_outBinaryFile.open(fname_thread, std::ios::binary);
-    m_position_histogram = init_3d_array<unsigned int>(m_nx, m_ny, m_nz, 0);
-    m_xMin = -1.5 * scale;
-    m_xMax = +1.5 * scale;
-    m_yMin = -1.5 * scale;
-    m_yMax = +1.5 * scale;
-    m_zMin = -1.5 * scale;
-    m_zMax = +1.5 * scale;
+    m_position_histogram = init_2d_array<unsigned int>(m_nx, m_ny, 0);
+    m_Min = -1.5 * scale;
+    m_Max = +1.5 * scale;
 }
 
-SamplerFineTune::SamplerFineTune(std::vector<std::unique_ptr<class SamplerFineTune>> &samplers) : Sampler()
+SamplerFineTune2D::SamplerFineTune2D(std::vector<std::unique_ptr<class SamplerFineTune2D>> &samplers) : Sampler()
 {
 
-    m_position_histogram = init_3d_array<unsigned int>(m_nx, m_ny, m_nz, 0);
+    m_position_histogram = init_2d_array<unsigned int>(m_nx, m_ny, 0);
     int numberOfWFParams = samplers[0]->getGradientTerms().size();
     m_numberOfDimensions = samplers[0]->getNdim();
     m_waveFunctionParameters = samplers[0]->getWFparams();
@@ -67,15 +63,9 @@ SamplerFineTune::SamplerFineTune(std::vector<std::unique_ptr<class SamplerFineTu
             }
         }
         // update histogram of positions.
-        for (int i = 0; i < m_nx; i++)
+        for (int i = 0; i < m_nx * m_ny; i++)
         {
-            for (int j = 0; j < m_ny; j++)
-            {
-                for (int k = 0; k < m_nz; k++)
-                {
-                    m_position_histogram[i][j][k] += sampler->m_position_histogram[i][j][k];
-                }
-            }
+            m_position_histogram[0][i] += sampler->m_position_histogram[0][i];
         }
         // obtain averages
         m_energy /= Nsamplers;
@@ -90,12 +80,12 @@ SamplerFineTune::SamplerFineTune(std::vector<std::unique_ptr<class SamplerFineTu
     }
 }
 
-SamplerFineTune::~SamplerFineTune()
+SamplerFineTune2D::~SamplerFineTune2D()
 {
-    delete_3d_array<unsigned int>(m_position_histogram);
+    delete_2d_array<unsigned int>(m_position_histogram);
 }
 
-void SamplerFineTune::sample(bool acceptedStep, System *system)
+void SamplerFineTune2D::sample(bool acceptedStep, System *system)
 {
     /*sample all the interesting things
      */
@@ -106,19 +96,18 @@ void SamplerFineTune::sample(bool acceptedStep, System *system)
     m_stepNumber++;
     m_numberOfAcceptedSteps += acceptedStep;
     std::vector<double> pos = system->getParticlePosition(0);
-    int i, j, k;
+    int i, j;
 
-    i = (int)((pos[0] - m_xMin) / (m_xMax - m_xMin) * m_nx);
-    j = (int)((pos[1] - m_yMin) / (m_yMax - m_yMin) * m_ny);
-    k = (int)((pos[2] - m_zMin) / (m_zMax - m_zMin) * m_nz);
-    bool within_limits = (i < m_nx) & (j < m_ny) & (k < m_nz) & (i > 0) & (j > 0) & (k > 0);
+    i = (int)((pos[0] - m_Min) / (m_Max - m_Min) * m_nx);
+    j = (int)((pos[1] - m_Min) / (m_Max - m_Min) * m_ny);
+    bool within_limits = (i < m_nx) & (j < m_ny) & (i > 0) & (j > 0);
     if (within_limits)
-        m_position_histogram[i][j][k] += 1;
+        m_position_histogram[i][j] += 1;
     // write sampled energy to a file
     m_outBinaryFile.write(reinterpret_cast<const char *>(&localEnergy), sizeof(double));
 }
 
-void SamplerFineTune::writeHistogram()
+void SamplerFineTune2D::writeHistogram()
 {
     int thread_number = omp_get_thread_num();
     std::string fname_thread = "./Outputs/histogram" + std::to_string(m_numberOfParticles) + "_" + std::to_string(thread_number) + ".bin";
@@ -128,7 +117,7 @@ void SamplerFineTune::writeHistogram()
         m_outBinaryFile.close();
     }
     m_outBinaryFile.open(fname_thread, std::ios::binary);
-    unsigned int hist_size = m_nx * m_ny * m_nz * sizeof(unsigned int);
-    m_outBinaryFile.write((char *)m_position_histogram[0][0], hist_size);
+    unsigned int hist_size = m_nx * m_ny * sizeof(unsigned int);
+    m_outBinaryFile.write((char *)m_position_histogram[0], hist_size);
     return;
 }

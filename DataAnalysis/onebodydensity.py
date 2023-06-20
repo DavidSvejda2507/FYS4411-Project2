@@ -4,46 +4,43 @@ import os
 from path import OUTPUT_DIR
 
 
-def get_histogram(N, NX=100, NY=100, NZ=100):
+def get_histogram(N_particles, N_threads=8, shape=(100, 100)):
     """get normalized histogram for experiment with N particles.
     maximum element of output is 1"""
-    HIST_TOT = np.zeros((NX, NY, NZ), dtype=np.uint32)
-    threadnums = np.arange(8)
-    for thread in threadnums:
+    output = np.zeros(shape, dtype=np.uint32)
+    for thread in range(N_threads):
         fname = os.path.join(
-            OUTPUT_DIR, "histogram" + str(N) + "_" + str(thread) + ".bin"
+            OUTPUT_DIR, "histogram" + str(N_particles) + "_" + str(thread) + ".bin"
         )
-        hist = np.fromfile(fname, dtype=np.uint32).reshape((NX, NY, NZ))
-        HIST_TOT += hist
+        hist = np.fromfile(fname, dtype=np.uint32).reshape(shape)
+        output += hist
 
-    # HIST_TOT=HIST_TOT/np.max(HIST_TOT)
-    return HIST_TOT
+    # output=output/np.max(output)
+    return output
 
 
 ####PLOT TWO HISTOGRAMS
-def plot_hists():
+def plot_hists(histogram, axes, filename):
     ticks = np.linspace(0, 100, 6)
     labels = np.linspace(-1.5, 1.5, 6)
+    labels = ["{:.1f}".format(label) for label in labels]
 
-    histogram = get_histogram(N=2)
-    fig, ax = plt.subplots(1, 2, figsize=(9, 4))
-    hist_xy = np.sum(histogram, axis=2)
-    hist_xz = np.sum(histogram, axis=1)
-    img = []
-    img.append(ax[0].imshow(np.transpose(hist_xy)))
-    ax[0].set_ylabel("y")
-    img.append(ax[1].imshow(np.transpose(hist_xz)))
-    ax[1].set_ylabel("z")
+    fig, ax = plt.subplots(1, len(axes), figsize=(5 * len(axes) - 1, 4))
+    if len(axes) == 1:
+        ax = [ax]
+    for dir, axis in zip(axes, ax):
+        hist_ax = np.sum(histogram, axis=dir)
+        img = axis.imshow(np.transpose(hist_ax))
+        axis.set_ylabel("y")
 
-    for ax_cur, imgcur in zip(ax, img):
-        ax_cur.set_xticks(ticks)
-        ax_cur.set_yticks(ticks)
-        ax_cur.set_xticklabels(["{:.1f}".format(label) for label in labels])
-        ax_cur.set_yticklabels(["{:.1f}".format(label) for label in labels[::-1]])
-        ax_cur.set_xlabel("x")
-        # fig.colorbar(imgcur, ax=ax_cur, format='%.0e')
-    plt.savefig("onebody_xy_xz_100.pdf", bbox_inches="tight")
-    plt.show()
+        axis.set_xticks(ticks)
+        axis.set_xticklabels(labels)
+        axis.set_yticks(ticks)
+        axis.set_yticklabels(labels[::-1])
+        axis.set_xlabel("x")
+        # fig.colorbar(img, ax=axis, format='%.0e')
+    fig.savefig(filename, bbox_inches="tight")
+    fig.show()
 
 
 def gaussian_fit(n, alphaopt, betaopt):
@@ -91,17 +88,18 @@ def gaussian_fit(n, alphaopt, betaopt):
     # get histogram along z axis:
 
 
-# hist_z = np.sum(HIST_TOT, axis=(0,1))
-
 if __name__ == "__main__":
-    print(
-        "$N$ & $\\alpha^\\star$ & $\\alpha^{\\text{opt}}$ & \
-           $\\beta^\\star$ & $\\beta^{\\text{opt}}$ & \
-           $\\alpha^\\star\\beta^\\star$ & $\\alpha^{\\text{opt}}\\beta^{\\text{opt}}$\
-          \\\\"
-    )
+    # print(
+    #     "$N$ & $\\alpha^\\star$ & $\\alpha^{\\text{opt}}$ & \
+    #        $\\beta^\\star$ & $\\beta^{\\text{opt}}$ & \
+    #        $\\alpha^\\star\\beta^\\star$ & $\\alpha^{\\text{opt}}\\beta^{\\text{opt}}$\
+    #       \\\\"
+    # )
     betaopt = np.array([2.8614, 2.9829, 2.9920])
     alphaopt = np.array([0.4941, 0.4742, 0.4673])
     # for i, n in enumerate([2]):
     #     gaussian_fit(n, alphaopt[i], betaopt[i])
-    plot_hists()
+
+    histogram = get_histogram(6, 8, (100, 100))
+    # plot_hists(histogram, [(2,), (1,)], "onebody_xy_xz_100.pdf")
+    plot_hists(histogram, [()], "onebody_100.pdf")

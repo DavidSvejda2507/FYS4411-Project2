@@ -95,14 +95,18 @@ void SamplerFineTune2D::sample(bool acceptedStep, System *system)
 
     m_stepNumber++;
     m_numberOfAcceptedSteps += acceptedStep;
-    std::vector<double> pos = system->getParticlePosition(0);
     int i, j;
+    bool within_limits;
+    for (int k = 0; k < m_numberOfParticles; k++)
+    {
+        std::vector<double> pos = system->getParticlePosition(0);
 
-    i = (int)((pos[0] - m_Min) / (m_Max - m_Min) * m_nx);
-    j = (int)((pos[1] - m_Min) / (m_Max - m_Min) * m_ny);
-    bool within_limits = (i < m_nx) & (j < m_ny) & (i > 0) & (j > 0);
-    if (within_limits)
-        m_position_histogram[i][j] += 1;
+        i = (int)((pos[0] - m_Min) / (m_Max - m_Min) * m_nx);
+        j = (int)((pos[1] - m_Min) / (m_Max - m_Min) * m_ny);
+        within_limits = (i < m_nx) & (j < m_ny) & (i > 0) & (j > 0);
+        if (within_limits)
+            m_position_histogram[i][j] += 1;
+    }
     // write sampled energy to a file
     m_outBinaryFile.write(reinterpret_cast<const char *>(&localEnergy), sizeof(double));
 }

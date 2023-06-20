@@ -7,13 +7,15 @@ from path import OUTPUT_DIR
 def get_histogram(N_particles, N_threads=8, shape=(100, 100)):
     """get normalized histogram for experiment with N particles.
     maximum element of output is 1"""
-    output = np.zeros(shape, dtype=np.uint32)
+    output = np.zeros(shape, dtype=np.uint64)
     for thread in range(N_threads):
         fname = os.path.join(
             OUTPUT_DIR, "histogram" + str(N_particles) + "_" + str(thread) + ".bin"
         )
-        hist = np.fromfile(fname, dtype=np.uint32).reshape(shape)
-        output += hist
+        hist = np.fromfile(fname, dtype=np.uint64).reshape(shape)
+        print(np.min(hist), np.max(hist))
+        if np.max(hist) < 500000:
+            output += hist
 
     # output=output/np.max(output)
     return output
@@ -21,11 +23,12 @@ def get_histogram(N_particles, N_threads=8, shape=(100, 100)):
 
 ####PLOT TWO HISTOGRAMS
 def plot_hists(histogram, axes, filename):
-    ticks = np.linspace(0, 100, 6)
-    labels = np.linspace(-1.5, 1.5, 6)
+    ticks = np.linspace(0, 200, 6)
+    labels = np.linspace(-3, 3, 6)
     labels = ["{:.1f}".format(label) for label in labels]
 
-    fig, ax = plt.subplots(1, len(axes), figsize=(5 * len(axes) - 1, 4))
+    # fig, ax = plt.subplots(1, len(axes), figsize=(5 * len(axes) - 1, 4))
+    fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     if len(axes) == 1:
         ax = [ax]
     for dir, axis in zip(axes, ax):
@@ -40,7 +43,6 @@ def plot_hists(histogram, axes, filename):
         axis.set_xlabel("x")
         # fig.colorbar(img, ax=axis, format='%.0e')
     fig.savefig(filename, bbox_inches="tight")
-    fig.show()
 
 
 def gaussian_fit(n, alphaopt, betaopt):
@@ -100,6 +102,7 @@ if __name__ == "__main__":
     # for i, n in enumerate([2]):
     #     gaussian_fit(n, alphaopt[i], betaopt[i])
 
-    histogram = get_histogram(6, 8, (100, 100))
+    histogram = get_histogram(20, 8, (200, 200))
+    print(np.min(histogram), np.max(histogram))
     # plot_hists(histogram, [(2,), (1,)], "onebody_xy_xz_100.pdf")
     plot_hists(histogram, [()], "onebody_100.pdf")

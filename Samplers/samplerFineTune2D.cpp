@@ -23,15 +23,15 @@ SamplerFineTune2D::SamplerFineTune2D(unsigned int numberOfParticles,
     int thread_number = omp_get_thread_num();
     std::string fname_thread = "./Outputs/sampledEnergies_" + std::to_string(numberOfParticles) + "_" + std::to_string(thread_number) + ".bin";
     m_outBinaryFile.open(fname_thread, std::ios::binary);
-    m_position_histogram = init_2d_array<unsigned int>(m_nx, m_ny, 0);
-    m_Min = -1.5 * scale;
-    m_Max = +1.5 * scale;
+    m_position_histogram = init_2d_array<unsigned long int>(m_nx, m_ny, 0);
+    m_Min = -3 * scale;
+    m_Max = +3 * scale;
 }
 
 SamplerFineTune2D::SamplerFineTune2D(std::vector<std::unique_ptr<class SamplerFineTune2D>> &samplers) : Sampler()
 {
 
-    m_position_histogram = init_2d_array<unsigned int>(m_nx, m_ny, 0);
+    m_position_histogram = init_2d_array<unsigned long int>(m_nx, m_ny, 0);
     int numberOfWFParams = samplers[0]->getGradientTerms().size();
     m_numberOfDimensions = samplers[0]->getNdim();
     m_waveFunctionParameters = samplers[0]->getWFparams();
@@ -82,7 +82,7 @@ SamplerFineTune2D::SamplerFineTune2D(std::vector<std::unique_ptr<class SamplerFi
 
 SamplerFineTune2D::~SamplerFineTune2D()
 {
-    delete_2d_array<unsigned int>(m_position_histogram);
+    delete_2d_array<unsigned long int>(m_position_histogram);
 }
 
 void SamplerFineTune2D::sample(bool acceptedStep, System *system)
@@ -97,9 +97,9 @@ void SamplerFineTune2D::sample(bool acceptedStep, System *system)
     m_numberOfAcceptedSteps += acceptedStep;
     int i, j;
     bool within_limits;
-    for (int k = 0; k < m_numberOfParticles; k++)
+    for (unsigned int k = 0; k < m_numberOfParticles; k++)
     {
-        std::vector<double> pos = system->getParticlePosition(0);
+        std::vector<double> pos = system->getParticlePosition(k);
 
         i = (int)((pos[0] - m_Min) / (m_Max - m_Min) * m_nx);
         j = (int)((pos[1] - m_Min) / (m_Max - m_Min) * m_ny);
@@ -121,7 +121,7 @@ void SamplerFineTune2D::writeHistogram()
         m_outBinaryFile.close();
     }
     m_outBinaryFile.open(fname_thread, std::ios::binary);
-    unsigned int hist_size = m_nx * m_ny * sizeof(unsigned int);
+    unsigned int hist_size = m_nx * m_ny * sizeof(unsigned long int);
     m_outBinaryFile.write((char *)m_position_histogram[0], hist_size);
     return;
 }

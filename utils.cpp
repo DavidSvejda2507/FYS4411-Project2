@@ -103,10 +103,18 @@ void wrapSimulationLargeScale(const std::vector<double> &params, void *xPtr)
     int NUM_THREADS = omp_get_max_threads();
     std::cout << "Using " << NUM_THREADS << " threads." << std::endl;
     std::vector<std::unique_ptr<class Sampler>> samplers(NUM_THREADS);
+    bool file_initiated;
+    if (FILE *fptr = fopen(P->filename.c_str(), "r"))
+    {
+        fclose(fptr);
+        file_initiated = true;
+    }
+    else
+        file_initiated = false;
 
-    ///////////////////////////////////////////////
-    ///// START PARALLEL REGION //////////////////
-    ///////////////////////////////////////////////
+        ///////////////////////////////////////////////
+        ///// START PARALLEL REGION //////////////////
+        ///////////////////////////////////////////////
 
 #pragma omp parallel
     {
@@ -124,6 +132,17 @@ void wrapSimulationLargeScale(const std::vector<double> &params, void *xPtr)
     ///// END PARALLEL REGION //////////////////
     ///////////////////////////////////////////////
 
+    // gather all simulation results in one sampler
+    std::unique_ptr<class Sampler> collective_sampler = std::make_unique<class Sampler>(samplers);
+    // write to file
+    if (!file_initiated)
+    {
+        collective_sampler->initiateFile(P->filename);
+        file_initiated = true;
+    }
+    collective_sampler->writeToFile(P->filename);
+    // write to terminal:
+    collective_sampler->printOutputToTerminalShort();
     return;
 }
 

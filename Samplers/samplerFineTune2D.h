@@ -18,8 +18,8 @@ public:
 
 private:
     std::ofstream m_outBinaryFile;
-    unsigned int **m_position_histogram;
-    int m_nx = 100;
-    int m_ny = 100;
+    unsigned long int **m_position_histogram;
+    int m_nx = 200;
+    int m_ny = 200;
     double m_Min, m_Max;
 };

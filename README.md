@@ -1,9 +1,12 @@
-# Variational Monte Carlo solver for a Bose-Einstein condensate
+# Variational Monte Carlo solver for a Fermionic condensate
 ![Languages](https://img.shields.io/badge/Languages-C%2B%2B%20%7C%20Python-blue)
 ![Size](https://img.shields.io/github/repo-size/DavidSvejda2507/FYS4411-Project1)
 
-This repository contains the code for the first project of the course [FYS4411 (spring 2023)](https://github.com/CompPhysics/ComputationalPhysics2).
-This was forked from this template [repository](https://github.com/mortele/variational-monte-carlo-fys4411.git), whose authors are thankfully acknowledged. 
+This repository contains the code for the second project of the course [FYS4411 (spring 2023)](https://github.com/CompPhysics/ComputationalPhysics2).
+This code was adapted from the code for the first project, which was forked from this template [repository](https://github.com/mortele/variational-monte-carlo-fys4411.git), whose authors are thankfully acknowledged.
+
+### Disclaimer
+This README was written for the first project and has not been properly updated for the second project. It may be out of date.
  
 ### Requirements
 The code is written in C++. To compile it, you need to have the [nlopt library](https://nlopt.readthedocs.io/en/latest/) and [OpenMP](https://www.openmp.org/) installed. The data analysis is written in python.
@@ -36,5 +39,7 @@ The python scripts for the data analysis are contained in the `DataAnalysis` fol
 
 ## Authors
 [David Svejda](https://github.com/DavidSvejda2507)<br>
+
+The first project whose code forms the basis of this project was done in collaboration with
 [Gianmarco Puleo](https://github.com/giammy00) <br>
 
